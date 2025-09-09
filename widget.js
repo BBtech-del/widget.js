@@ -18,6 +18,7 @@
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.05); }
     }
+
     .bb-avatar-wrap {
       position: fixed; bottom: 20px; right: 20px;
       width: 72px; height: 72px;
@@ -27,7 +28,9 @@
       background: rgba(255,255,255,0.05);
       border: 2px solid rgba(255,255,255,0.2);
       animation: bb-breathing 4s ease-in-out infinite;
+      box-shadow: none;
     }
+
     .bb-avatar-img {
       width: 100%; height: 100%;
       border-radius: 50%;
@@ -35,12 +38,14 @@
       background: transparent;
       pointer-events: none;
     }
+
     .bb-overlay {
       position: fixed; inset: 0;
       background: transparent;
       display: flex; align-items: center; justify-content: center;
       z-index: 2147483646;
     }
+
     .bb-card {
       background: ${theme.background}; color: ${theme.text};
       padding: 20px; border-radius: 12px;
@@ -48,11 +53,13 @@
       max-width: 400px; width: 100%;
       font-family: sans-serif; position: relative;
     }
+
     .bb-card-close {
       position: absolute; top: 10px; right: 10px;
       cursor: pointer; font-size: 18px; font-weight: bold;
       background: transparent; border: none;
     }
+
     .bb-chat {
       position: fixed; bottom: 100px; right: 20px;
       width: 360px; height: 500px;
@@ -62,23 +69,29 @@
       display: none; flex-direction: column;
       z-index: 2147483645; overflow: hidden;
     }
+
     .bb-chat-header {
       padding: 10px; background: ${theme.primary}; color: #fff;
       font-weight: bold; display: flex; justify-content: space-between;
     }
+
     .bb-chat-body { flex: 1; padding: 10px; overflow-y: auto; }
+
     .bb-chat-inputbar {
       display: flex; padding: 10px; border-top: 1px solid #eee;
     }
+
     .bb-input {
       flex: 1; padding: 10px; border-radius: 8px;
       border: 1px solid #ccc;
     }
+
     .bb-send {
       margin-left: 8px; padding: 10px;
       background: ${theme.primary}; color: #fff;
       border: none; border-radius: 8px;
     }
+
     .bb-msg { margin: 8px 0; }
     .bb-msg.user { text-align: right; color: ${theme.accent}; }
     .bb-msg.bot { text-align: left; color: ${theme.text}; }

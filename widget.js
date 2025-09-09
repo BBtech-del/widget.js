@@ -220,6 +220,10 @@
   async function sendToBot(message) {
     addMsg(message, "user");
     input.value = "";
+
+    // Pull hidden FAQ block if present
+    const faqData = document.getElementById('faq-data')?.innerText || '';
+
     try {
       const res = await fetch(`${apiBase}/chat`, {
         method: "POST",
@@ -229,6 +233,7 @@
           url: scrapeUrl,          // send both for compatibility
           lead,
           message,
+          faqData,                 // << send FAQ to backend
           mode: scrapeMode,
           source: "widget",
           site: location.hostname,
@@ -246,27 +251,11 @@
     }
   }
 
-  function kickoffScrape() {
-    // Fire-and-forget scrape ping
-    fetch(`${apiBase}/scrape`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        url: scrapeUrl,            // primary key many scrapers expect
-        pageUrl: scrapeUrl,
-        mode: scrapeMode,
-        source: "widget",
-        site: location.hostname,
-        referrer: document.referrer || null
-      })
-    }).catch(() => {});
-  }
-
   function startChat(user) {
     lead = user;
     chat.style.display = "flex";
     addMsg(greeting);
-    kickoffScrape();
+    // Removed kickoffScrape(); no scraping needed
   }
 
   avatarWrap.onclick = () => {

@@ -12,13 +12,49 @@
 
   let lead = null;
 
-  // Inject breathing animation CSS
+  // Inject breathing animation CSS + modal styles
   const style = document.createElement("style");
   style.textContent = `
     @keyframes breathing {
       0% { transform: scale(1); }
       50% { transform: scale(1.05); }
       100% { transform: scale(1); }
+    }
+    .bb-overlay {
+      position: fixed; top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10000;
+    }
+    .bb-card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      width: 300px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      position: relative;
+      font-family: sans-serif;
+    }
+    .bb-card-close {
+      position: absolute;
+      top: 8px; right: 8px;
+      background: none; border: none;
+      font-size: 18px; cursor: pointer;
+    }
+    .bb-input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .bb-send {
+      background: ${theme.primary};
+      color: #fff;
+      border: none;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
     }
   `;
   document.head.appendChild(style);
@@ -111,10 +147,7 @@
       const res = await fetch(`${apiBase}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientId,
-          message
-        })
+        body: JSON.stringify({ clientId, message })
       });
       if (!res.ok) {
         addMsg(`I had trouble replying just now (status ${res.status}).`);
@@ -132,12 +165,59 @@
     addMsg(greeting);
   }
 
+  // ===== Lead Modal =====
+  function showLeadModal(onSubmit) {
+    if (document.querySelector(".bb-overlay")) return;
+
+    const overlay = document.createElement("div");
+    overlay.className = "bb-overlay";
+
+    const card = document.createElement("div");
+    card.className = "bb-card";
+    card.innerHTML = `
+      <button class="bb-card-close" aria-label="Close">×</button>
+      <div style="font-size:18px; font-weight:bold; margin-bottom:10px;">👋 Welcome! I'm here to help...</div>
+      <div style="margin-bottom:6px;">Before we begin, may I have your name and email?</div>
+      <input type="text" placeholder="Your name" class="bb-input" />
+      <input type="email" placeholder="you@example.com" class="bb-input" />
+      <button class="bb-send" style="width:100%; margin-top:6px;">Start Chat</button>
+    `;
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    card.querySelector(".bb-card-close").onclick = () => overlay.remove();
+    card.querySelector(".bb-send").onclick = () => {
+      const name = card.querySelector("input[type=text]").value.trim();
+      const email = card.querySelector("input[type=email]").value.trim();
+      if (!name || !email) {
+        alert("Please enter both name and email.");
+        return;
+      }
+      lead = { name, email };
+      overlay.remove();
+
+      // Send lead to client's CRM/form if provided
+      if (cfg.leadCaptureUrl) {
+        fetch(cfg.leadCaptureUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(lead)
+        }).catch(() => {});
+      }
+
+      onSubmit();
+    };
+  }
+
   avatarWrap.onclick = () => {
     if (!lead && cfg.leadCaptureUrl) {
-      // Optional: show lead capture modal here and POST to cfg.leadCaptureUrl
-      startChat();
+      showLeadModal(startChat);
     } else {
       chat.style.display = chat.style.display === "none" ? "flex" : "none";
+      if (chat.style.display === "flex" && messages.childElementCount === 0) {
+        addMsg(greeting);
+      }
     }
   };
 

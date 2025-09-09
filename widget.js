@@ -63,20 +63,27 @@
   // Avatar
   const avatarWrap = document.createElement("div");
   avatarWrap.style.position = "fixed";
-  avatarWrap.style.bottom = "20px";
+  avatarWrap.style.bottom = "80px"; // raised higher on desktop
   avatarWrap.style.right = "20px";
   avatarWrap.style.width = "60px";
   avatarWrap.style.height = "60px";
   avatarWrap.style.borderRadius = "50%";
   avatarWrap.style.background = `url(${avatarUrl}) center/cover no-repeat`;
   avatarWrap.style.cursor = "pointer";
-  avatarWrap.style.zIndex = "9999";
+  avatarWrap.style.zIndex = "2147483647"; // always on top
+  avatarWrap.style.transformOrigin = "center center";
   avatarWrap.style.animation = "breathing 3s ease-in-out infinite";
+
+  // Adjust for mobile
+  if (window.innerWidth < 480) {
+    avatarWrap.style.bottom = "20px";
+    avatarWrap.style.right = "10px";
+  }
 
   // Chat container
   const chat = document.createElement("div");
   chat.style.position = "fixed";
-  chat.style.bottom = "90px";
+  chat.style.bottom = "150px"; // matches raised avatar
   chat.style.right = "20px";
   chat.style.width = "320px";
   chat.style.height = "400px";
@@ -87,7 +94,6 @@
   chat.style.display = "none";
   chat.style.flexDirection = "column";
   chat.style.zIndex = "9999";
-  chat.style.position = "fixed";
 
   // Chat close button
   const chatClose = document.createElement("button");
@@ -231,3 +237,6 @@
 
   sendBtn.onclick = () => {
     const msg = input.value.trim();
+    if (msg) sendToBot(msg);
+  };
+

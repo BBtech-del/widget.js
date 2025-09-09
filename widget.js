@@ -10,7 +10,6 @@
 
   const avatarUrl = config.avatar || "";
   const greeting = config.greeting || "Howdy! How may I help you?";
-  const scrapeMode = config.scrape || "page";
   const scrapeUrl = config.scrapeUrl || window.location.href;
   const apiBase = "https://bizbuild-scraper.oluwasanu.workers.dev";
   // 🔷 END: Config Setup Section
@@ -23,7 +22,7 @@
       position: fixed; bottom: 20px; right: 20px; width: 72px; height: 72px;
       border-radius: 50%; cursor: pointer; z-index: 999999;
       animation: bb-breathing 4s ease-in-out infinite;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+      box-shadow: none;
       background-image: url('${avatarUrl}');
       background-size: cover; background-position: center;
       background-color: transparent;
@@ -53,10 +52,11 @@
     card.style.cssText = `
       background: ${theme.background}; color: ${theme.text};
       padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-      max-width: 400px; width: 100%; font-family: sans-serif;
+      max-width: 400px; width: 100%; font-family: sans-serif; position: relative;
     `;
 
     card.innerHTML = `
+      <div style="position:absolute; top:10px; right:10px; cursor:pointer; font-size:18px; font-weight:bold;" id="bb-lead-close">×</div>
       <div style="font-size:18px; font-weight:bold; margin-bottom:10px;">👋 Welcome! I'm here to help...</div>
       <div style="margin-bottom:16px;">Before we begin, may I have your name and email?</div>
       <input type="text" placeholder="Your name" style="width:100%; margin-bottom:10px; padding:10px; border-radius:8px; border:1px solid #ccc;" />
@@ -65,12 +65,18 @@
     `;
 
     const [nameInput, emailInput, button] = card.querySelectorAll("input, input, button");
+    const closeBtn = card.querySelector("#bb-lead-close");
+
     button.onclick = () => {
       const name = nameInput.value.trim();
       const email = emailInput.value.trim();
       if (!name || !email || !email.includes("@")) return;
       document.body.removeChild(overlay);
       startChat({ name, email });
+    };
+
+    closeBtn.onclick = () => {
+      document.body.removeChild(overlay);
     };
 
     overlay.appendChild(card);
@@ -131,7 +137,8 @@
       });
       const data = await res.json();
       addMsg(data.reply || "I had trouble replying just now. Please try again.");
-    } catch {
+    } catch (err) {
+      console.error("Chat error:", err);
       addMsg("I had trouble replying just now. Please try again.");
     }
   }

@@ -1,6 +1,7 @@
 (function () {
-  // Parse config from this script’s query parameters
+  // Read config from window.BizBuildConfig and query params, with precedence to window config.
   function getConfig() {
+    const winCfg = (typeof window !== "undefined" && window.BizBuildConfig) ? window.BizBuildConfig : {};
     let scriptEl = document.currentScript;
     if (!scriptEl) {
       const scripts = document.getElementsByTagName('script');
@@ -10,18 +11,23 @@
     const qp = src ? src.searchParams : new URLSearchParams();
 
     const cfg = {
-      clientId: qp.get('clientId') || '', // required for backend routing; stays empty if not provided
-      avatarUrl: qp.get('avatar') || '',  // optional; if missing, we render a neutral circle
-      greeting: qp.get('greeting') || 'Hello! I’m here to help.',
-      scrapeMode: (qp.get('scrape') || 'page').toLowerCase(), // "page" or "custom"
-      scrapeUrl: qp.get('scrapeUrl') || '',
-      // API base: where /scrape and /chat live; can be a full URL or left blank for relative
-      apiBase: qp.get('api') || '', // e.g., https://api.yourdomain.com
+      clientId: winCfg.clientId || qp.get('clientId') || '',
+
+      avatarUrl: winCfg.avatar || qp.get('avatar') || '',
+
+      greeting: winCfg.greeting || qp.get('greeting') || 'Hello! I’m here to help.',
+
+      scrapeMode: (winCfg.scrape || qp.get('scrape') || 'page').toLowerCase(), // "page" or "custom"
+      scrapeUrl: winCfg.scrapeUrl || qp.get('scrapeUrl') || '',
+
+      // Default API base to your Worker so it works out of the box
+      apiBase: winCfg.api || qp.get('api') || 'https://bizbuild-scraper.oluwasanu.workers.dev',
+
       theme: {
-        background: qp.get('bg') || '#ffffff',
-        text: qp.get('text') || '#222222',
-        accent: qp.get('accent') || '#4a90e2',
-        primary: qp.get('primary') || '#4a90e2'
+        background: (winCfg.bg || qp.get('bg')) || '#ffffff',
+        text: (winCfg.text || qp.get('text')) || '#222222',
+        accent: (winCfg.accent || qp.get('accent')) || '#4a90e2',
+        primary: (winCfg.primary || qp.get('primary')) || '#4a90e2'
       }
     };
     return cfg;
@@ -29,20 +35,20 @@
 
   const CONFIG = getConfig();
 
-  // Utilities
   function create(tag, attrs = {}, styles = {}) {
     const el = document.createElement(tag);
     for (const k in attrs) el[k] = attrs[k];
     Object.assign(el.style, styles);
     return el;
   }
+
   function apiUrl(path) {
-    if (!CONFIG.apiBase) return path;              // relative: /scrape, /chat
-    if (CONFIG.apiBase.endsWith('/')) return CONFIG.apiBase.slice(0, -1) + path;
-    return CONFIG.apiBase + path;
+    const base = CONFIG.apiBase || '';
+    if (!base) return path;
+    return base.endsWith('/') ? base.slice(0, -1) + path : base + path;
   }
 
-  // Styles (breathing only; no blink; transparent overlay)
+  // Styles
   const style = document.createElement('style');
   style.textContent = `
     @keyframes bb-breathing { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
@@ -78,24 +84,19 @@
       overflow: hidden; display: flex; flex-direction: column;
     }
     .bb-chat-header {
-      flex: 0 0 auto; padding: 10px 12px; background: ${CONFIG.theme.primary}; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: space-between;
+      flex: 0 0 auto; padding: 10px 12px; background: ${CONFIG.theme.primary}; color: #fff;
+      font-weight: 700; display: flex; align-items: center; justify-content: space-between;
     }
     .bb-chat-close {
       width: 28px; height: 28px; border-radius: 6px; background: rgba(255,255,255,0.2); color: #fff; font-weight: 900;
       display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none;
     }
-    .bb-chat-body {
-      flex: 1 1 auto; overflow-y: auto; padding: 12px;
-    }
-    .bb-chat-input {
-      flex: 0 0 auto; display: flex; gap: 8px; padding: 10px; border-top: 1px solid #eee; background: ${CONFIG.theme.background};
-    }
+    .bb-chat-body { flex: 1 1 auto; overflow-y: auto; padding: 12px; }
+    .bb-chat-input { flex: 0 0 auto; display: flex; gap: 8px; padding: 10px; border-top: 1px solid #eee; background: ${CONFIG.theme.background}; }
     .bb-chat-input input {
       flex: 1; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; color: ${CONFIG.theme.text}; background: ${CONFIG.theme.background};
     }
-    .bb-chat-input button {
-      padding: 10px 14px; border: none; border-radius: 8px; background: ${CONFIG.theme.primary}; color: #fff; font-weight: 700; cursor: pointer;
-    }
+    .bb-chat-input button { padding: 10px 14px; border: none; border-radius: 8px; background: ${CONFIG.theme.primary}; color: #fff; font-weight: 700; cursor: pointer; }
     .bb-msg { margin: 8px 0; line-height: 1.4; }
     .bb-msg-user { text-align: right; color: ${CONFIG.theme.accent}; }
     .bb-msg-bot { color: #111; }
@@ -106,29 +107,26 @@
   `;
   document.head.appendChild(style);
 
-  // Floating avatar (breathing only)
-  const avatar = create('div', {}, { });
+  // Avatar
+  const avatar = create('div');
   avatar.className = 'bb-avatar';
   if (CONFIG.avatarUrl) {
     avatar.style.backgroundImage = `url('${CONFIG.avatarUrl}')`;
   } else {
-    // neutral fallback (no brand defaults)
     avatar.style.background = 'radial-gradient(circle at 30% 30%, #e8e8e8, #cfcfcf)';
   }
   document.body.appendChild(avatar);
 
-  // Chat UI (inline, no iframe)
+  // Chat UI
   const chat = create('div'); chat.className = 'bb-chat';
   const header = create('div'); header.className = 'bb-chat-header';
   header.appendChild(create('div', { innerText: 'Chat' }));
   const closeBtn = create('div', { innerText: '×' }); closeBtn.className = 'bb-chat-close';
   header.appendChild(closeBtn);
-
   const body = create('div'); body.className = 'bb-chat-body';
   const inputWrap = create('div'); inputWrap.className = 'bb-chat-input';
   const input = create('input', { placeholder: 'Type your message...' });
   const sendBtn = create('button', { innerText: 'Send' });
-
   inputWrap.appendChild(input);
   inputWrap.appendChild(sendBtn);
   chat.appendChild(header);
@@ -136,20 +134,16 @@
   chat.appendChild(inputWrap);
   document.body.appendChild(chat);
 
-  // Safe guard to not stack overlays
+  // Lead modal
   function showLeadModal(onSubmit) {
     if (document.querySelector('.bb-overlay')) return;
-
     const overlay = create('div'); overlay.className = 'bb-overlay';
     const card = create('div'); card.className = 'bb-card';
-
     const title = create('div', { innerText: "👋 Welcome! I'm here to help..." }); title.className = 'bb-title';
     const desc = create('div', { innerText: 'Before we begin, may I have your name and email?' }); desc.className = 'bb-desc';
-
     const nameInput = create('input', { type: 'text', placeholder: 'Your name', required: true }); nameInput.className = 'bb-input';
     const emailInput = create('input', { type: 'email', placeholder: 'you@example.com', required: true }); emailInput.className = 'bb-input';
     const err = create('div', { innerText: '' }); err.className = 'bb-error';
-
     const submitBtn = create('button', { innerText: 'Start Chat', type: 'button' }); submitBtn.className = 'bb-btn';
     submitBtn.addEventListener('click', () => {
       const name = nameInput.value.trim();
@@ -159,7 +153,6 @@
       document.body.removeChild(overlay);
       onSubmit({ name, email });
     });
-
     card.append(title, desc, nameInput, emailInput, err, submitBtn);
     overlay.appendChild(card);
     document.body.appendChild(overlay);
@@ -182,28 +175,32 @@
       const resp = await fetch(apiUrl('/scrape'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scrapeUrl: pageUrl, clientId: CONFIG.clientId })
+        body: JSON.stringify({ scrapeUrl: pageUrl })
       });
       if (!resp.ok) throw new Error('Scrape failed');
       const data = await resp.json();
-      return data && data.summary ? data.summary : '';
+      // Worker may just return success; show a friendly confirmation if no summary is included.
+      return data.summary || '';
     } catch (e) {
       return '';
     }
   }
 
   async function sendToBot(message, pageUrl, lead) {
-    const payload = { clientId: CONFIG.clientId, pageUrl, lead, message };
-    const resp = await fetch(apiUrl('/chat'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await resp.json().catch(() => ({}));
-    return data && data.reply ? data.reply : "Thanks! I’m on it.";
+    try {
+      const resp = await fetch(apiUrl('/chat'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pageUrl, lead, message })
+      });
+      const data = await resp.json().catch(() => ({}));
+      return data.reply || "Thanks! I’m on it.";
+    } catch (e) {
+      return "I had trouble replying just now. Please try again.";
+    }
   }
 
-  // Interaction logic
+  // Interaction
   let lead = null;
   let bootstrapped = false;
 
@@ -212,11 +209,9 @@
     if (bootstrapped) return;
     bootstrapped = true;
 
-    // Personalized greeting
     const name = lead && lead.name ? ` ${lead.name}` : '';
     addMsg((CONFIG.greeting || 'Hello!') + name, 'bot');
 
-    // Optional: quick summary
     const ctxUrl = currentContextUrl();
     const summary = await fetchSummary(ctxUrl);
     if (summary) addMsg('Here’s a quick summary of this page: ' + summary, 'bot');
@@ -224,32 +219,23 @@
 
   avatar.addEventListener('click', () => {
     if (!lead) {
-      showLeadModal((data) => {
-        lead = data;
-        openChatIfReady();
-      });
+      showLeadModal((data) => { lead = data; openChatIfReady(); });
       return;
     }
-    // Toggle chat visibility
     chat.style.display = chat.style.display === 'none' ? 'flex' : 'none';
   });
 
-  closeBtn.addEventListener('click', () => {
-    chat.style.display = 'none';
-  });
+  closeBtn.addEventListener('click', () => { chat.style.display = 'none'; });
 
   function submitMessage() {
     const text = input.value.trim();
     if (!text) return;
     input.value = '';
     addMsg(text, 'user');
-
     const ctxUrl = currentContextUrl();
     sendToBot(text, ctxUrl, lead).then((reply) => addMsg(reply, 'bot'));
   }
 
   sendBtn.addEventListener('click', submitMessage);
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') submitMessage();
-  });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitMessage(); });
 })();

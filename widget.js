@@ -35,7 +35,7 @@
       position: relative;
       font-family: sans-serif;
     }
-    .bb-card-close {
+    .bb-card-close, .bb-chat-close {
       position: absolute;
       top: 8px; right: 8px;
       background: none; border: none;
@@ -62,7 +62,7 @@
   // Create avatar button
   const avatarWrap = document.createElement("div");
   avatarWrap.style.position = "fixed";
-  avatarWrap.style.bottom = "20px";
+  avatarWrap.style.bottom = "60px"; // raised higher on desktop
   avatarWrap.style.right = "20px";
   avatarWrap.style.width = "60px";
   avatarWrap.style.height = "60px";
@@ -75,7 +75,7 @@
   // Create chat container
   const chat = document.createElement("div");
   chat.style.position = "fixed";
-  chat.style.bottom = "90px";
+  chat.style.bottom = "130px"; // matches raised avatar
   chat.style.right = "20px";
   chat.style.width = "320px";
   chat.style.height = "400px";
@@ -86,6 +86,12 @@
   chat.style.display = "none";
   chat.style.flexDirection = "column";
   chat.style.zIndex = "9999";
+
+  // Add close button to chat
+  const chatClose = document.createElement("button");
+  chatClose.className = "bb-chat-close";
+  chatClose.innerHTML = "×";
+  chatClose.onclick = () => chat.style.display = "none";
 
   const messages = document.createElement("div");
   messages.style.flex = "1";
@@ -113,6 +119,7 @@
 
   inputWrap.appendChild(input);
   inputWrap.appendChild(sendBtn);
+  chat.appendChild(chatClose);
   chat.appendChild(messages);
   chat.appendChild(inputWrap);
   document.body.appendChild(avatarWrap);

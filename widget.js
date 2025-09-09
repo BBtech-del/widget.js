@@ -17,23 +17,23 @@
   // 🔷 START: Style Injection Section
   const style = document.createElement("style");
   style.textContent = `
-    @keyframes bb-blink {
-      0%, 100% { opacity: 1 }
-      50% { opacity: 0.85 }
+    @keyframes bb-breathing {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
     }
 
     .bb-avatar {
       position: fixed; bottom: 20px; right: 20px; width: 72px; height: 72px;
       border-radius: 50%; cursor: pointer; z-index: 999999;
-      animation: bb-blink 3s ease-in-out infinite;
-      box-shadow: none !important;
+      animation: bb-breathing 4s ease-in-out infinite;
+      box-shadow: none;
       background-image: url('${avatarUrl}');
-      background-size: cover; background-position: center;
-      background-color: transparent !important;
+      background-size: cover;
+      background-position: center;
     }
 
     .bb-overlay {
-      position: fixed; inset: 0; background: transparent !important;
+      position: fixed; inset: 0; background: transparent;
       display: flex; align-items: center; justify-content: center;
       z-index: 999998;
     }

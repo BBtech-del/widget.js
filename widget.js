@@ -12,7 +12,7 @@
 
   let lead = null;
 
-  // Inject styles
+  // Inject breathing animation CSS + modal styles
   const style = document.createElement("style");
   style.textContent = `
     @keyframes breathing {
@@ -35,12 +35,11 @@
       position: relative;
       font-family: sans-serif;
     }
-    .bb-card-close, .bb-chat-close {
+    .bb-card-close {
       position: absolute;
       top: 8px; right: 8px;
       background: none; border: none;
       font-size: 18px; cursor: pointer;
-      color: #666;
     }
     .bb-input {
       width: 100%;
@@ -60,30 +59,23 @@
   `;
   document.head.appendChild(style);
 
-  // Avatar
+  // Create avatar button
   const avatarWrap = document.createElement("div");
   avatarWrap.style.position = "fixed";
-  avatarWrap.style.bottom = "80px"; // raised higher on desktop
+  avatarWrap.style.bottom = "20px";
   avatarWrap.style.right = "20px";
   avatarWrap.style.width = "60px";
   avatarWrap.style.height = "60px";
   avatarWrap.style.borderRadius = "50%";
   avatarWrap.style.background = `url(${avatarUrl}) center/cover no-repeat`;
   avatarWrap.style.cursor = "pointer";
-  avatarWrap.style.zIndex = "2147483647"; // always on top
-  avatarWrap.style.transformOrigin = "center center";
+  avatarWrap.style.zIndex = "9999";
   avatarWrap.style.animation = "breathing 3s ease-in-out infinite";
 
-  // Adjust for mobile
-  if (window.innerWidth < 480) {
-    avatarWrap.style.bottom = "20px";
-    avatarWrap.style.right = "10px";
-  }
-
-  // Chat container
+  // Create chat container
   const chat = document.createElement("div");
   chat.style.position = "fixed";
-  chat.style.bottom = "150px"; // matches raised avatar
+  chat.style.bottom = "90px";
   chat.style.right = "20px";
   chat.style.width = "320px";
   chat.style.height = "400px";
@@ -94,12 +86,6 @@
   chat.style.display = "none";
   chat.style.flexDirection = "column";
   chat.style.zIndex = "9999";
-
-  // Chat close button
-  const chatClose = document.createElement("button");
-  chatClose.className = "bb-chat-close";
-  chatClose.innerHTML = "×";
-  chatClose.onclick = () => chat.style.display = "none";
 
   const messages = document.createElement("div");
   messages.style.flex = "1";
@@ -127,7 +113,6 @@
 
   inputWrap.appendChild(input);
   inputWrap.appendChild(sendBtn);
-  chat.appendChild(chatClose);
   chat.appendChild(messages);
   chat.appendChild(inputWrap);
   document.body.appendChild(avatarWrap);
@@ -177,10 +162,10 @@
 
   function startChat() {
     chat.style.display = "flex";
-    if (messages.childElementCount === 0) addMsg(greeting);
+    addMsg(greeting);
   }
 
-  // Lead Modal
+  // ===== Lead Modal =====
   function showLeadModal(onSubmit) {
     if (document.querySelector(".bb-overlay")) return;
 
@@ -212,6 +197,7 @@
       lead = { name, email };
       overlay.remove();
 
+      // Send lead to client's CRM/form if provided
       if (cfg.leadCaptureUrl) {
         fetch(cfg.leadCaptureUrl, {
           method: "POST",
@@ -240,3 +226,7 @@
     if (msg) sendToBot(msg);
   };
 
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendBtn.click();
+  });
+})();

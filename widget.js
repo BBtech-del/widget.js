@@ -10,15 +10,122 @@
   const avatarUrl = cfg.avatar || "";
   const greeting = cfg.greeting || "Howdy! How may I help you?";
   const scrapeMode = cfg.scrape || "page";
-  const scrapeUrl = cfg.scrapeUrl || window.location.href;
+  const scrapeUrl = cfg.scrapeUrl || window.location.href; // override via embed for client site
   const apiBase = (cfg.api || "https://bizbuild-scraper.oluwasanu.workers.dev").replace(/\/+$/, "");
 
-  // ===== Styles =====
+  // ===== Styles (no opacity changes; no backgrounds, borders or shadows) =====
   const style = document.createElement("style");
-  style.textContent = `/* your full CSS block — unchanged */`;
+  style.textContent = `
+    @keyframes bb-breathing {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .bb-avatar-wrap {
+      position: fixed; bottom: 20px; right: 20px;
+      width: 72px; height: 72px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      z-index: 2147483647;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      animation: bb-breathing 4s ease-in-out infinite;
+      -webkit-tap-highlight-color: transparent;
+      backface-visibility: hidden;
+      transform: translateZ(0);
+      will-change: transform;
+      pointer-events: auto;
+    }
+
+    .bb-avatar-img {
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+      background: transparent;
+      border: none;
+      pointer-events: none;
+    }
+
+    .bb-overlay {
+      position: fixed; inset: 0;
+      background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2147483646;
+    }
+
+    .bb-card {
+      background: ${theme.background};
+      color: ${theme.text};
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      max-width: 400px; width: 100%;
+      position: relative;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    }
+
+    .bb-card-close {
+      position: absolute; top: 10px; right: 10px;
+      cursor: pointer; font-size: 18px; font-weight: bold;
+      line-height: 1; color: ${theme.text};
+      background: transparent; border: none;
+    }
+
+    /* Force stacked inputs on all devices */
+    .bb-card .bb-input {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      background: #fff;
+      color: #111;
+    }
+
+    .bb-send {
+      padding: 10px 14px;
+      background: ${theme.primary};
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .bb-chat {
+      position: fixed; bottom: 100px; right: 20px;
+      width: 360px; height: 500px;
+      background: ${theme.background};
+      color: ${theme.text};
+      border: 1px solid ${theme.accent};
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      display: none; flex-direction: column;
+      z-index: 2147483645; overflow: hidden;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    }
+
+    .bb-chat-header {
+      padding: 10px; background: ${theme.primary}; color: #fff;
+      font-weight: bold; display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .bb-chat-body { flex: 1; padding: 10px; overflow-y: auto; }
+    .bb-chat-inputbar { display: flex; padding: 10px; border-top: 1px solid #eee; gap: 8px; }
+
+    .bb-chat-inputbar .bb-input {
+      flex: 1; margin: 0; /* override modal margins */
+    }
+
+    .bb-msg { margin: 8px 0; }
+    .bb-msg.user { text-align: right; color: ${theme.accent}; }
+    .bb-msg.bot { text-align: left; color: ${theme.text}; }
+  `;
   document.head.appendChild(style);
 
-  // ===== Avatar =====
+  // ===== Avatar (uses <img>, not CSS background) =====
   const avatarWrap = document.createElement("div");
   avatarWrap.className = "bb-avatar-wrap";
   avatarWrap.setAttribute("role", "button");
@@ -113,31 +220,25 @@
   async function sendToBot(message) {
     addMsg(message, "user");
     input.value = "";
-
-    const faqData = document.getElementById('faq-data')?.innerText || '';
-
     try {
       const res = await fetch(`${apiBase}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           pageUrl: scrapeUrl,
-          url: scrapeUrl,
+          url: scrapeUrl,          // send both for compatibility
           lead,
           message,
-          faqData,
           mode: scrapeMode,
           source: "widget",
           site: location.hostname,
           referrer: document.referrer || null
         })
       });
-
       if (!res.ok) {
         addMsg(`I had trouble replying just now (status ${res.status}).`);
         return;
       }
-
       const data = await res.json();
       addMsg(data.reply || data.answer || data.message || "I had trouble replying just now.");
     } catch {
@@ -145,10 +246,27 @@
     }
   }
 
+  function kickoffScrape() {
+    // Fire-and-forget scrape ping
+    fetch(`${apiBase}/scrape`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: scrapeUrl,            // primary key many scrapers expect
+        pageUrl: scrapeUrl,
+        mode: scrapeMode,
+        source: "widget",
+        site: location.hostname,
+        referrer: document.referrer || null
+      })
+    }).catch(() => {});
+  }
+
   function startChat(user) {
     lead = user;
     chat.style.display = "flex";
     addMsg(greeting);
+    kickoffScrape();
   }
 
   avatarWrap.onclick = () => {

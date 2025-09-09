@@ -1,5 +1,5 @@
 (function () {
-  // 🔷 START: Config Setup Section
+  // 🔷 Config Setup
   const config = window.BizBuildConfig || {};
   const theme = config.theme || {
     background: "#ffffff",
@@ -12,9 +12,8 @@
   const scrapeMode = config.scrape || "page";
   const scrapeUrl = config.scrapeUrl || window.location.href;
   const apiBase = config.api || "https://bizbuild-scraper.oluwasanu.workers.dev";
-  // 🔷 END: Config Setup Section
 
-  // 🔷 START: Style Injection Section
+  // 🔷 Style Injection
   const style = document.createElement("style");
   style.textContent = `
     @keyframes bb-breathing {
@@ -22,32 +21,47 @@
       50% { transform: scale(1.05); }
     }
 
-    .bb-avatar {
-      position: fixed; bottom: 20px; right: 20px; width: 72px; height: 72px;
-      border-radius: 50%; cursor: pointer; z-index: 999999;
+    .bb-avatar-wrap {
+      position: fixed; bottom: 20px; right: 20px;
+      width: 72px; height: 72px;
+      border-radius: 50%; cursor: pointer;
+      z-index: 999999;
       animation: bb-breathing 4s ease-in-out infinite;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent;
       box-shadow: none;
-      background-image: url('${avatarUrl}');
-      background-size: cover;
-      background-position: center;
+      padding: 0; margin: 0;
+    }
+
+    .bb-avatar-img {
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      background: transparent;
+      pointer-events: none;
     }
 
     .bb-overlay {
-      position: fixed; inset: 0; background: transparent;
+      position: fixed; inset: 0;
+      background: transparent;
       display: flex; align-items: center; justify-content: center;
       z-index: 999998;
     }
   `;
   document.head.appendChild(style);
-  // 🔷 END: Style Injection Section
 
-  // 🔷 START: Avatar Setup Section
-  const avatar = document.createElement("div");
-  avatar.className = "bb-avatar";
-  document.body.appendChild(avatar);
-  // 🔷 END: Avatar Setup Section
+  // 🔷 Avatar Setup
+  const avatarWrap = document.createElement("div");
+  avatarWrap.className = "bb-avatar-wrap";
 
-  // 🔷 START: Lead Modal Section
+  const avatarImg = document.createElement("img");
+  avatarImg.className = "bb-avatar-img";
+  avatarImg.src = avatarUrl;
+  avatarImg.alt = "Assistant avatar";
+  avatarWrap.appendChild(avatarImg);
+  document.body.appendChild(avatarWrap);
+
+  // 🔷 Lead Modal
   function showLeadModal(onSubmit) {
     if (document.querySelector(".bb-overlay")) return;
     const overlay = document.createElement("div");
@@ -56,8 +70,10 @@
     const card = document.createElement("div");
     card.style.cssText = `
       background: ${theme.background}; color: ${theme.text};
-      padding: 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-      max-width: 400px; width: 100%; font-family: sans-serif; position: relative;
+      padding: 20px; border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      max-width: 400px; width: 100%;
+      font-family: sans-serif; position: relative;
     `;
 
     card.innerHTML = `
@@ -87,16 +103,17 @@
     overlay.appendChild(card);
     document.body.appendChild(overlay);
   }
-  // 🔷 END: Lead Modal Section
 
-  // 🔷 START: Chat UI Section
+  // 🔷 Chat UI
   const chat = document.createElement("div");
   chat.style.cssText = `
-    position: fixed; bottom: 100px; right: 20px; width: 360px; height: 500px;
+    position: fixed; bottom: 100px; right: 20px;
+    width: 360px; height: 500px;
     background: ${theme.background}; color: ${theme.text};
     border: 1px solid ${theme.accent}; border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: none;
-    flex-direction: column; z-index: 999997; overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    display: none; flex-direction: column;
+    z-index: 999997; overflow: hidden;
   `;
 
   chat.innerHTML = `
@@ -111,9 +128,8 @@
     </div>
   `;
   document.body.appendChild(chat);
-  // 🔷 END: Chat UI Section
 
-  // 🔷 START: Chat Logic Section
+  // 🔷 Chat Logic
   const body = chat.querySelector("#bb-body");
   const input = chat.querySelector("#bb-input");
   const sendBtn = chat.querySelector("#bb-send");
@@ -171,7 +187,7 @@
     }).catch(() => {});
   }
 
-  avatar.onclick = () => {
+  avatarWrap.onclick = () => {
     if (!lead) {
       showLeadModal(startChat);
     } else {
@@ -191,5 +207,4 @@
   input.onkeydown = (e) => {
     if (e.key === "Enter") sendBtn.click();
   };
-  // 🔷 END: Chat Logic Section
 })();

@@ -2,6 +2,8 @@
   const cfg = window.MyBotConfig || {};
   const clientId = cfg.clientId || "default";
   const avatarUrl = cfg.avatar || "";
+  const botName = cfg.botName || "Chatbot";
+  const botImage = cfg.botImage || avatarUrl;
   const greeting = cfg.greeting || "Hi! How can I help you today?";
   const apiBase = (cfg.api || "").replace(/\/+$/, "");
   const theme = cfg.theme || {
@@ -10,9 +12,7 @@
     primary: "#4a90e2"
   };
 
-  let lead = null;
-
-  // Inject breathing animation CSS + modal styles
+  // Inject styles
   const style = document.createElement("style");
   style.textContent = `
     @keyframes breathing {
@@ -20,102 +20,123 @@
       50% { transform: scale(1.05); }
       100% { transform: scale(1); }
     }
-    .bb-overlay {
-      position: fixed; top:0; left:0; right:0; bottom:0;
-      background: rgba(0,0,0,0.5);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 10000;
+    .bb-avatar {
+      position: fixed;
+      bottom: 60px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: url(${avatarUrl}) center/cover no-repeat;
+      cursor: pointer;
+      z-index: 9999;
+      animation: breathing 3s ease-in-out infinite;
     }
-    .bb-card {
-      background: #fff;
-      padding: 20px;
+    .bb-chat {
+      position: fixed;
+      bottom: 130px;
+      right: 20px;
+      width: 320px;
+      height: 400px;
+      background: ${theme.background};
+      color: ${theme.text};
+      border: 1px solid ${theme.primary};
       border-radius: 8px;
-      width: 300px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      position: relative;
+      display: none;
+      flex-direction: column;
+      z-index: 9999;
+      overflow: hidden;
       font-family: sans-serif;
     }
-    .bb-card-close {
-      position: absolute;
-      top: 8px; right: 8px;
-      background: none; border: none;
-      font-size: 18px; cursor: pointer;
-    }
-    .bb-input {
-      width: 100%;
+    .bb-chat-header {
+      display: flex;
+      align-items: center;
+      background: ${theme.primary};
+      color: #fff;
       padding: 8px;
-      margin-bottom: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
     }
-    .bb-send {
+    .bb-chat-header img {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .bb-chat-header span {
+      flex: 1;
+      font-weight: bold;
+    }
+    .bb-chat-header button {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .bb-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    .bb-inputbar {
+      display: flex;
+      border-top: 1px solid ${theme.primary};
+    }
+    .bb-inputbar input {
+      flex: 1;
+      border: none;
+      padding: 10px;
+    }
+    .bb-inputbar button {
       background: ${theme.primary};
       color: #fff;
       border: none;
-      padding: 10px;
-      border-radius: 4px;
+      padding: 10px 15px;
       cursor: pointer;
     }
   `;
   document.head.appendChild(style);
 
-  // Create avatar button
-  const avatarWrap = document.createElement("div");
-  avatarWrap.style.position = "fixed";
-  avatarWrap.style.bottom = "20px";
-  avatarWrap.style.right = "20px";
-  avatarWrap.style.width = "60px";
-  avatarWrap.style.height = "60px";
-  avatarWrap.style.borderRadius = "50%";
-  avatarWrap.style.background = `url(${avatarUrl}) center/cover no-repeat`;
-  avatarWrap.style.cursor = "pointer";
-  avatarWrap.style.zIndex = "9999";
-  avatarWrap.style.animation = "breathing 3s ease-in-out infinite";
+  // Avatar button
+  const avatar = document.createElement("div");
+  avatar.className = "bb-avatar";
+  document.body.appendChild(avatar);
 
-  // Create chat container
+  // Chat container
   const chat = document.createElement("div");
-  chat.style.position = "fixed";
-  chat.style.bottom = "90px";
-  chat.style.right = "20px";
-  chat.style.width = "320px";
-  chat.style.height = "400px";
-  chat.style.background = theme.background;
-  chat.style.color = theme.text;
-  chat.style.border = `1px solid ${theme.primary}`;
-  chat.style.borderRadius = "8px";
-  chat.style.display = "none";
-  chat.style.flexDirection = "column";
-  chat.style.zIndex = "9999";
+  chat.className = "bb-chat";
 
+  // Header
+  const header = document.createElement("div");
+  header.className = "bb-chat-header";
+  const headerImg = document.createElement("img");
+  headerImg.src = botImage;
+  const headerTitle = document.createElement("span");
+  headerTitle.textContent = botName;
+  const headerClose = document.createElement("button");
+  headerClose.innerHTML = "×";
+  headerClose.onclick = () => chat.style.display = "none";
+  header.appendChild(headerImg);
+  header.appendChild(headerTitle);
+  header.appendChild(headerClose);
+
+  // Messages area
   const messages = document.createElement("div");
-  messages.style.flex = "1";
-  messages.style.overflowY = "auto";
-  messages.style.padding = "10px";
+  messages.className = "bb-messages";
 
-  const inputWrap = document.createElement("div");
-  inputWrap.style.display = "flex";
-  inputWrap.style.borderTop = `1px solid ${theme.primary}`;
-
+  // Input bar
+  const inputBar = document.createElement("div");
+  inputBar.className = "bb-inputbar";
   const input = document.createElement("input");
   input.type = "text";
   input.placeholder = "Type your message...";
-  input.style.flex = "1";
-  input.style.border = "none";
-  input.style.padding = "10px";
-
   const sendBtn = document.createElement("button");
   sendBtn.textContent = "Send";
-  sendBtn.style.background = theme.primary;
-  sendBtn.style.color = "#fff";
-  sendBtn.style.border = "none";
-  sendBtn.style.padding = "10px 15px";
-  sendBtn.style.cursor = "pointer";
+  inputBar.appendChild(input);
+  inputBar.appendChild(sendBtn);
 
-  inputWrap.appendChild(input);
-  inputWrap.appendChild(sendBtn);
+  chat.appendChild(header);
   chat.appendChild(messages);
-  chat.appendChild(inputWrap);
-  document.body.appendChild(avatarWrap);
+  chat.appendChild(inputBar);
   document.body.appendChild(chat);
 
   function addMsg(text, from = "bot") {
@@ -162,62 +183,13 @@
 
   function startChat() {
     chat.style.display = "flex";
-    addMsg(greeting);
+    if (messages.childElementCount === 0) addMsg(greeting);
   }
 
-  // ===== Lead Modal =====
-  function showLeadModal(onSubmit) {
-    if (document.querySelector(".bb-overlay")) return;
-
-    const overlay = document.createElement("div");
-    overlay.className = "bb-overlay";
-
-    const card = document.createElement("div");
-    card.className = "bb-card";
-    card.innerHTML = `
-      <button class="bb-card-close" aria-label="Close">×</button>
-      <div style="font-size:18px; font-weight:bold; margin-bottom:10px;">👋 Welcome! I'm here to help...</div>
-      <div style="margin-bottom:6px;">Before we begin, may I have your name and email?</div>
-      <input type="text" placeholder="Your name" class="bb-input" />
-      <input type="email" placeholder="you@example.com" class="bb-input" />
-      <button class="bb-send" style="width:100%; margin-top:6px;">Start Chat</button>
-    `;
-
-    overlay.appendChild(card);
-    document.body.appendChild(overlay);
-
-    card.querySelector(".bb-card-close").onclick = () => overlay.remove();
-    card.querySelector(".bb-send").onclick = () => {
-      const name = card.querySelector("input[type=text]").value.trim();
-      const email = card.querySelector("input[type=email]").value.trim();
-      if (!name || !email) {
-        alert("Please enter both name and email.");
-        return;
-      }
-      lead = { name, email };
-      overlay.remove();
-
-      // Send lead to client's CRM/form if provided
-      if (cfg.leadCaptureUrl) {
-        fetch(cfg.leadCaptureUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(lead)
-        }).catch(() => {});
-      }
-
-      onSubmit();
-    };
-  }
-
-  avatarWrap.onclick = () => {
-    if (!lead && cfg.leadCaptureUrl) {
-      showLeadModal(startChat);
-    } else {
-      chat.style.display = chat.style.display === "none" ? "flex" : "none";
-      if (chat.style.display === "flex" && messages.childElementCount === 0) {
-        addMsg(greeting);
-      }
+  avatar.onclick = () => {
+    chat.style.display = chat.style.display === "none" ? "flex" : "none";
+    if (chat.style.display === "flex" && messages.childElementCount === 0) {
+      addMsg(greeting);
     }
   };
 
@@ -225,8 +197,7 @@
     const msg = input.value.trim();
     if (msg) sendToBot(msg);
   };
-
-  input.addEventListener("keydown", (e) => {
+  input.addEventListener("keydown", e => {
     if (e.key === "Enter") sendBtn.click();
   });
 })();

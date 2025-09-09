@@ -1,180 +1,115 @@
 (function () {
-  const cfg = window.MyBotConfig || {};
-  const clientId = cfg.clientId || "default";
-  const avatarUrl = cfg.avatar || "";
-  const greeting = cfg.greeting || "Hi! How can I help you today?";
-  const apiBase = (cfg.api || "").replace(/\/+$/, "");
+  // ===== Config =====
+  const cfg = window.BizBuildConfig || {};
   const theme = cfg.theme || {
     background: "#ffffff",
     text: "#222222",
+    accent: "#4a90e2",
     primary: "#4a90e2"
   };
+  const avatarUrl = cfg.avatar || "";
+  const greeting = cfg.greeting || "Howdy! How may I help you?";
+  const scrapeMode = cfg.scrape || "page";
+  const scrapeUrl = cfg.scrapeUrl || window.location.href;
+  const apiBase = (cfg.api || "https://bizbuild-scraper.oluwasanu.workers.dev").replace(/\/+$/, "");
 
-  let lead = null;
-
-  // --- Auto-detect CRM endpoint if not provided ---
-  function detectCRMEndpoint() {
-    const forms = document.querySelectorAll("form[action]");
-    for (let form of forms) {
-      const action = form.getAttribute("action");
-      if (action && /crm|lead|form/i.test(action)) {
-        return new URL(action, window.location.origin).href;
-      }
-    }
-    const meta = document.querySelector("meta[name='crm-endpoint']");
-    if (meta && meta.content) return meta.content;
-    if (window.CRM_ENDPOINT) return window.CRM_ENDPOINT;
-    return null;
-  }
-  if (!cfg.leadCaptureUrl) {
-    const detected = detectCRMEndpoint();
-    if (detected) cfg.leadCaptureUrl = detected;
-  }
-
-  // Inject breathing animation CSS + modal styles
+  // ===== Styles =====
   const style = document.createElement("style");
   style.textContent = `
-    @keyframes breathing {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-    .bb-overlay {
-      position: fixed; top:0; left:0; right:0; bottom:0;
-      background: rgba(0,0,0,0.5);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 10000;
-    }
-    .bb-card {
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      width: 300px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      position: relative;
-      font-family: sans-serif;
-    }
-    .bb-card-close, .bb-chat-close {
-      position: absolute;
-      top: 8px; right: 8px;
-      background: none; border: none;
-      font-size: 18px; cursor: pointer;
-    }
-    .bb-input {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    .bb-send {
-      background: ${theme.primary};
-      color: #fff;
-      border: none;
-      padding: 10px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
+    @keyframes bb-breathing { 0%,100%{transform:scale(1);} 50%{transform:scale(1.05);} }
+    .bb-avatar-wrap { position:fixed; bottom:60px; right:20px; width:72px; height:72px;
+      display:flex; align-items:center; justify-content:center; border-radius:50%;
+      z-index:2147483647; animation:bb-breathing 4s ease-in-out infinite; cursor:pointer; }
+    .bb-avatar-img { width:100%; height:100%; border-radius:50%; object-fit:cover; display:block; }
+    .bb-overlay { position:fixed; inset:0; background:transparent; display:flex; align-items:center; justify-content:center; z-index:2147483646; }
+    .bb-card { background:${theme.background}; color:${theme.text}; padding:20px; border-radius:12px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.25); max-width:400px; width:100%; position:relative; }
+    .bb-card-close { position:absolute; top:10px; right:10px; cursor:pointer; font-size:18px; font-weight:bold; background:transparent; border:none; color:${theme.text}; }
+    .bb-card .bb-input { display:block; width:100%; margin:10px 0; padding:10px; border-radius:8px; border:1px solid #ccc; }
+    .bb-send { padding:10px 14px; background:${theme.primary}; color:#fff; border:none; border-radius:8px; cursor:pointer; }
+    .bb-chat { position:fixed; bottom:130px; right:20px; width:360px; height:500px; background:${theme.background}; color:${theme.text};
+      border:1px solid ${theme.accent}; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.25); display:none; flex-direction:column; z-index:2147483645; overflow:hidden; }
+    .bb-chat-header { padding:10px; background:${theme.primary}; color:#fff; font-weight:bold; display:flex; justify-content:space-between; align-items:center; }
+    .bb-chat-body { flex:1; padding:10px; overflow-y:auto; }
+    .bb-chat-inputbar { display:flex; padding:10px; border-top:1px solid #eee; gap:8px; }
+    .bb-chat-inputbar .bb-input { flex:1; margin:0; }
+    .bb-msg { margin:8px 0; }
+    .bb-msg.user { text-align:right; color:${theme.accent}; }
+    .bb-msg.bot { text-align:left; color:${theme.text}; }
   `;
   document.head.appendChild(style);
 
-  // Create avatar button with preload + fallback
+  // ===== Avatar =====
   const avatarWrap = document.createElement("div");
-  avatarWrap.style.position = "fixed";
-  avatarWrap.style.bottom = "60px"; // raised higher on desktop
-  avatarWrap.style.right = "20px";
-  avatarWrap.style.width = "60px";
-  avatarWrap.style.height = "60px";
-  avatarWrap.style.borderRadius = "50%";
-  avatarWrap.style.cursor = "pointer";
-  avatarWrap.style.zIndex = "9999";
-  avatarWrap.style.animation = "breathing 3s ease-in-out infinite";
-  avatarWrap.style.background = theme.primary; // fallback color
+  avatarWrap.className = "bb-avatar-wrap";
+  const avatarImg = document.createElement("img");
+  avatarImg.className = "bb-avatar-img";
+  avatarImg.alt = "Assistant avatar";
+  avatarImg.src = avatarUrl;
+  avatarWrap.appendChild(avatarImg);
+  document.body.appendChild(avatarWrap);
 
-  if (avatarUrl) {
-    const img = new Image();
-    img.onload = () => {
-      avatarWrap.style.background = `url(${avatarUrl}) center/cover no-repeat`;
+  // ===== Lead Modal =====
+  function showLeadModal(onSubmit) {
+    if (document.querySelector(".bb-overlay")) return;
+    const overlay = document.createElement("div");
+    overlay.className = "bb-overlay";
+    const card = document.createElement("div");
+    card.className = "bb-card";
+    card.innerHTML = `
+      <button class="bb-card-close" aria-label="Close">×</button>
+      <div style="font-size:18px;font-weight:bold;margin-bottom:10px;">👋 Welcome! I'm here to help...</div>
+      <div style="margin-bottom:6px;">Before we begin, may I have your name and email?</div>
+      <input type="text" placeholder="Your name" class="bb-input" />
+      <input type="email" placeholder="you@example.com" class="bb-input" />
+      <button class="bb-send" style="width:100%;margin-top:6px;">Start Chat</button>
+    `;
+    const [nameInput, emailInput] = card.querySelectorAll(".bb-input");
+    const startBtn = card.querySelector(".bb-send");
+    const closeBtn = card.querySelector(".bb-card-close");
+    const closeOverlay = () => overlay.remove();
+    startBtn.onclick = () => {
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+      if (!name || !email || !email.includes("@")) return;
+      closeOverlay();
+      startChat({ name, email });
     };
-    img.onerror = () => {
-      avatarWrap.style.background = theme.primary;
-    };
-    img.src = avatarUrl;
+    closeBtn.onclick = closeOverlay;
+    overlay.addEventListener("click", e => { if (e.target === overlay) closeOverlay(); });
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
   }
 
-  // Create chat container
+  // ===== Chat UI =====
   const chat = document.createElement("div");
-  chat.style.position = "fixed";
-  chat.style.bottom = "130px"; // matches raised avatar
-  chat.style.right = "20px";
-  chat.style.width = "320px";
-  chat.style.height = "400px";
-  chat.style.background = theme.background;
-  chat.style.color = theme.text;
-  chat.style.border = `1px solid ${theme.primary}`;
-  chat.style.borderRadius = "8px";
-  chat.style.display = "none";
-  chat.style.flexDirection = "column";
-  chat.style.zIndex = "9999";
-
-  // Add close button to chat
-  const chatClose = document.createElement("button");
-  chatClose.className = "bb-chat-close";
-  chatClose.innerHTML = "×";
-  chatClose.onclick = () => chat.style.display = "none";
-
-  const messages = document.createElement("div");
-  messages.style.flex = "1";
-  messages.style.overflowY = "auto";
-  messages.style.padding = "10px";
-
-  const inputWrap = document.createElement("div");
-  inputWrap.style.display = "flex";
-  inputWrap.style.borderTop = `1px solid ${theme.primary}`;
-
-  const input = document.createElement("input");
-  input.type = "text";
-  input.placeholder = "Type your message...";
-  input.style.flex = "1";
-  input.style.border = "none";
-  input.style.padding = "10px";
-
-  const sendBtn = document.createElement("button");
-  sendBtn.textContent = "Send";
-  sendBtn.style.background = theme.primary;
-  sendBtn.style.color = "#fff";
-  sendBtn.style.border = "none";
-  sendBtn.style.padding = "10px 15px";
-  sendBtn.style.cursor = "pointer";
-
-  inputWrap.appendChild(input);
-  inputWrap.appendChild(sendBtn);
-  chat.appendChild(chatClose);
-  chat.appendChild(messages);
-  chat.appendChild(inputWrap);
-  document.body.appendChild(avatarWrap);
+  chat.className = "bb-chat";
+  chat.innerHTML = `
+    <div class="bb-chat-header">
+      <span>Chat</span>
+      <button class="bb-send" id="bb-close" aria-label="Close chat" style="background:transparent;border:none;color:#fff;font-weight:bold;font-size:18px;padding:0;">×</button>
+    </div>
+    <div class="bb-chat-body" id="bb-body"></div>
+    <div class="bb-chat-inputbar">
+      <input class="bb-input" id="bb-input" placeholder="Type your message..." />
+      <button class="bb-send" id="bb-send">Send</button>
+    </div>
+  `;
   document.body.appendChild(chat);
 
-  function addMsg(text, from = "bot") {
-    const msg = document.createElement("div");
-    msg.textContent = text;
-    msg.style.margin = "5px 0";
-    msg.style.padding = "8px";
-    msg.style.borderRadius = "6px";
-    msg.style.maxWidth = "80%";
-    msg.style.wordWrap = "break-word";
-    msg.style.display = "inline-block";
-    if (from === "bot") {
-      msg.style.background = theme.primary;
-      msg.style.color = "#fff";
-      msg.style.alignSelf = "flex-start";
-    } else {
-      msg.style.background = "#e0e0e0";
-      msg.style.color = "#000";
-      msg.style.alignSelf = "flex-end";
-    }
-    messages.appendChild(msg);
-    messages.scrollTop = messages.scrollHeight;
+  // ===== Chat Logic =====
+  const body = chat.querySelector("#bb-body");
+  const input = chat.querySelector("#bb-input");
+  const sendBtn = chat.querySelector("#bb-send");
+  const closeBtn = chat.querySelector("#bb-close");
+  let lead = null;
+
+  function addMsg(text, who = "bot") {
+    const div = document.createElement("div");
+    div.className = `bb-msg ${who}`;
+    div.textContent = text;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
   }
 
   async function sendToBot(message) {
@@ -184,44 +119,48 @@
       const res = await fetch(`${apiBase}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, message })
+        body: JSON.stringify({
+          pageUrl: scrapeUrl,
+          url: scrapeUrl,
+          lead,
+          message,
+          mode: scrapeMode,
+          source: "widget",
+          site: location.hostname,
+          referrer: document.referrer || null
+        })
       });
-      if (!res.ok) {
-        addMsg(`I had trouble replying just now (status ${res.status}).`);
-        return;
-      }
+      if (!res.ok) { addMsg(`I had trouble replying just now (status ${res.status}).`); return; }
       const data = await res.json();
       addMsg(data.reply || data.answer || data.message || "I had trouble replying just now.");
-    } catch {
-      addMsg("I had trouble replying just now.");
-    }
+    } catch { addMsg("I had trouble replying just now."); }
   }
 
-  function startChat() {
+  function kickoffScrape() {
+    fetch(`${apiBase}/scrape`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: scrapeUrl,
+        pageUrl: scrapeUrl,
+        mode: scrapeMode,
+        source: "widget",
+        site: location.hostname,
+        referrer: document.referrer || null
+      })
+    }).catch(() => {});
+  }
+
+  function startChat(user) {
+    lead = user;
     chat.style.display = "flex";
-    if (messages.childElementCount === 0) addMsg(greeting);
+    addMsg(greeting);
+    kickoffScrape();
   }
 
-  // ===== Lead Modal =====
-  function showLeadModal(onSubmit) {
-    if (document.querySelector(".bb-overlay")) return;
-
-    const overlay = document.createElement("div");
-    overlay.className = "bb-overlay";
-
-    const card = document.createElement("div");
-    card.className = "bb-card";
-    card.innerHTML = `
-      <button class="bb-card-close" aria-label="Close">×</button>
-      <div style="font-size:18px; font-weight:bold; margin-bottom:10px;">👋 Welcome! I'm here to help...</div>
-      <div style="margin-bottom:6px;">Before we begin, may I have your name and email?</div>
-      <input type="text" placeholder="Your name" class="bb-input" />
-      <input type="email" placeholder="you@example.com" class="bb-input" />
-      <button class="bb-send" style="width:100%; margin-top:6px;">Start Chat</button>
-    `;
-
-    overlay.appendChild(card);
-    document.body.appendChild(overlay);
-
-    card.querySelector(".bb-card-close").onclick = () => overlay.remove();
-    card
+  // ===== Always show modal first time =====
+  avatarWrap.onclick = () => {
+    if (!lead) {
+      showLeadModal(startChat);
+    } else {
+      chat.style.display = chat.style.display === "none" ? "flex"

@@ -12,6 +12,28 @@
 
   let lead = null;
 
+  // --- Auto-detect CRM endpoint if not provided ---
+  function detectCRMEndpoint() {
+    // Look for forms with an action attribute containing crm/lead/form
+    const forms = document.querySelectorAll("form[action]");
+    for (let form of forms) {
+      const action = form.getAttribute("action");
+      if (action && /crm|lead|form/i.test(action)) {
+        return new URL(action, window.location.origin).href;
+      }
+    }
+    // Look for meta tag
+    const meta = document.querySelector("meta[name='crm-endpoint']");
+    if (meta && meta.content) return meta.content;
+    // Look for global JS var
+    if (window.CRM_ENDPOINT) return window.CRM_ENDPOINT;
+    return null;
+  }
+  if (!cfg.leadCaptureUrl) {
+    const detected = detectCRMEndpoint();
+    if (detected) cfg.leadCaptureUrl = detected;
+  }
+
   // Inject breathing animation CSS + modal styles
   const style = document.createElement("style");
   style.textContent = `
@@ -169,7 +191,7 @@
 
   function startChat() {
     chat.style.display = "flex";
-    addMsg(greeting);
+    if (messages.childElementCount === 0) addMsg(greeting);
   }
 
   // ===== Lead Modal =====
@@ -205,35 +227,3 @@
       overlay.remove();
 
       // Send lead to client's CRM/form if provided
-      if (cfg.leadCaptureUrl) {
-        fetch(cfg.leadCaptureUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(lead)
-        }).catch(() => {});
-      }
-
-      onSubmit();
-    };
-  }
-
-  avatarWrap.onclick = () => {
-    if (!lead && cfg.leadCaptureUrl) {
-      showLeadModal(startChat);
-    } else {
-      chat.style.display = chat.style.display === "none" ? "flex" : "none";
-      if (chat.style.display === "flex" && messages.childElementCount === 0) {
-        addMsg(greeting);
-      }
-    }
-  };
-
-  sendBtn.onclick = () => {
-    const msg = input.value.trim();
-    if (msg) sendToBot(msg);
-  };
-
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") sendBtn.click();
-  });
-})();

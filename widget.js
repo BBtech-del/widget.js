@@ -13,14 +13,13 @@
   const scrapeUrl = cfg.scrapeUrl || window.location.href; // override via embed for client site
   const apiBase = (cfg.api || "https://bizbuild-scraper.oluwasanu.workers.dev").replace(/\/+$/, "");
 
-  // ===== Styles (no opacity changes; no backgrounds, borders or shadows) =====
+  // ===== Styles =====
   const style = document.createElement("style");
   style.textContent = `
     @keyframes bb-breathing {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.05); }
     }
-
     .bb-avatar-wrap {
       position: fixed; bottom: 20px; right: 20px;
       width: 72px; height: 72px;
@@ -36,25 +35,24 @@
       transform: translateZ(0);
       will-change: transform;
       pointer-events: auto;
+      outline: none !important;
     }
-
     .bb-avatar-img {
       width: 100%; height: 100%;
       border-radius: 50%;
       object-fit: cover;
       display: block;
-      background: transparent;
+      background: transparent !important;
       border: none;
       pointer-events: none;
+      outline: none !important;
     }
-
     .bb-overlay {
       position: fixed; inset: 0;
       background: transparent;
       display: flex; align-items: center; justify-content: center;
       z-index: 2147483646;
     }
-
     .bb-card {
       background: ${theme.background};
       color: ${theme.text};
@@ -65,15 +63,12 @@
       position: relative;
       font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
     }
-
     .bb-card-close {
       position: absolute; top: 10px; right: 10px;
       cursor: pointer; font-size: 18px; font-weight: bold;
       line-height: 1; color: ${theme.text};
       background: transparent; border: none;
     }
-
-    /* Force stacked inputs on all devices */
     .bb-card .bb-input {
       display: block;
       width: 100%;
@@ -84,7 +79,6 @@
       background: #fff;
       color: #111;
     }
-
     .bb-send {
       padding: 10px 14px;
       background: ${theme.primary};
@@ -93,7 +87,6 @@
       border-radius: 8px;
       cursor: pointer;
     }
-
     .bb-chat {
       position: fixed; bottom: 100px; right: 20px;
       width: 360px; height: 500px;
@@ -106,48 +99,38 @@
       z-index: 2147483645; overflow: hidden;
       font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
     }
-
     .bb-chat-header {
       padding: 10px; background: ${theme.primary}; color: #fff;
       font-weight: bold; display: flex; justify-content: space-between; align-items: center;
     }
-
     .bb-chat-body { flex: 1; padding: 10px; overflow-y: auto; }
     .bb-chat-inputbar { display: flex; padding: 10px; border-top: 1px solid #eee; gap: 8px; }
-
-    .bb-chat-inputbar .bb-input {
-      flex: 1; margin: 0; /* override modal margins */
-    }
-
+    .bb-chat-inputbar .bb-input { flex: 1; margin: 0; }
     .bb-msg { margin: 8px 0; }
     .bb-msg.user { text-align: right; color: ${theme.accent}; }
     .bb-msg.bot { text-align: left; color: ${theme.text}; }
   `;
   document.head.appendChild(style);
 
-  // ===== Avatar (uses <img>, not CSS background) =====
+  // ===== Avatar =====
   const avatarWrap = document.createElement("div");
   avatarWrap.className = "bb-avatar-wrap";
   avatarWrap.setAttribute("role", "button");
   avatarWrap.setAttribute("aria-label", "Open chat");
-
   const avatarImg = document.createElement("img");
   avatarImg.className = "bb-avatar-img";
   avatarImg.alt = "Assistant avatar";
   avatarImg.decoding = "async";
   avatarImg.referrerPolicy = "no-referrer";
   avatarImg.src = avatarUrl;
-
   avatarWrap.appendChild(avatarImg);
   document.body.appendChild(avatarWrap);
 
   // ===== Lead Modal =====
   function showLeadModal(onSubmit) {
     if (document.querySelector(".bb-overlay")) return;
-
     const overlay = document.createElement("div");
     overlay.className = "bb-overlay";
-
     const card = document.createElement("div");
     card.className = "bb-card";
     card.innerHTML = `
@@ -158,16 +141,13 @@
       <input type="email" placeholder="you@example.com" class="bb-input" />
       <button class="bb-send" style="width:100%; margin-top:6px;">Start Chat</button>
     `;
-
     const nameInput = card.querySelectorAll(".bb-input")[0];
     const emailInput = card.querySelectorAll(".bb-input")[1];
     const startBtn = card.querySelector(".bb-send");
     const closeBtn = card.querySelector(".bb-card-close");
-
     const closeOverlay = () => {
       if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
     };
-
     startBtn.onclick = () => {
       const name = nameInput.value.trim();
       const email = emailInput.value.trim();
@@ -175,12 +155,10 @@
       closeOverlay();
       startChat({ name, email });
     };
-
     closeBtn.onclick = closeOverlay;
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) closeOverlay();
     });
-
     overlay.appendChild(card);
     document.body.appendChild(overlay);
   }
@@ -197,96 +175,3 @@
     <div class="bb-chat-inputbar">
       <input class="bb-input" id="bb-input" placeholder="Type your message..." />
       <button class="bb-send" id="bb-send">Send</button>
-    </div>
-  `;
-  document.body.appendChild(chat);
-
-  // ===== Chat Logic =====
-  const body = chat.querySelector("#bb-body");
-  const input = chat.querySelector("#bb-input");
-  const sendBtn = chat.querySelector("#bb-send");
-  const closeBtn = chat.querySelector("#bb-close");
-
-  let lead = null;
-
-  function addMsg(text, who = "bot") {
-    const div = document.createElement("div");
-    div.className = `bb-msg ${who}`;
-    div.textContent = text;
-    body.appendChild(div);
-    body.scrollTop = body.scrollHeight;
-  }
-
-  async function sendToBot(message) {
-    addMsg(message, "user");
-    input.value = "";
-    try {
-      const res = await fetch(`${apiBase}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pageUrl: scrapeUrl,
-          url: scrapeUrl,          // send both for compatibility
-          lead,
-          message,
-          mode: scrapeMode,
-          source: "widget",
-          site: location.hostname,
-          referrer: document.referrer || null
-        })
-      });
-      if (!res.ok) {
-        addMsg(`I had trouble replying just now (status ${res.status}).`);
-        return;
-      }
-      const data = await res.json();
-      addMsg(data.reply || data.answer || data.message || "I had trouble replying just now.");
-    } catch {
-      addMsg("I had trouble replying just now.");
-    }
-  }
-
-  function kickoffScrape() {
-    // Fire-and-forget scrape ping
-    fetch(`${apiBase}/scrape`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        url: scrapeUrl,            // primary key many scrapers expect
-        pageUrl: scrapeUrl,
-        mode: scrapeMode,
-        source: "widget",
-        site: location.hostname,
-        referrer: document.referrer || null
-      })
-    }).catch(() => {});
-  }
-
-  function startChat(user) {
-    lead = user;
-    chat.style.display = "flex";
-    addMsg(greeting);
-    kickoffScrape();
-  }
-
-  avatarWrap.onclick = () => {
-    if (!lead) {
-      showLeadModal(startChat);
-    } else {
-      chat.style.display = chat.style.display === "none" ? "flex" : "none";
-    }
-  };
-
-  closeBtn.onclick = () => {
-    chat.style.display = "none";
-  };
-
-  sendBtn.onclick = () => {
-    const msg = input.value.trim();
-    if (msg) sendToBot(msg);
-  };
-
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") sendBtn.click();
-  });
-})();

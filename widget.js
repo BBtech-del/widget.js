@@ -127,7 +127,7 @@
   `;
   document.head.appendChild(style);
 
-  // ===== Avatar (uses <img>, not CSS background) =====
+  // ===== Avatar (robust loader with clean fallback) =====
   const avatarWrap = document.createElement("div");
   avatarWrap.className = "bb-avatar-wrap";
   avatarWrap.setAttribute("role", "button");
@@ -138,7 +138,23 @@
   avatarImg.alt = "Assistant avatar";
   avatarImg.decoding = "async";
   avatarImg.referrerPolicy = "no-referrer";
-  avatarImg.src = avatarUrl;
+
+  // Preload to ensure the image actually exists, then set src or a transparent fallback
+  const FALLBACK_TRANSPARENT_PNG =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAAAAAAfH2QAAAAAAnRSTlMAAHaTzTgAAAAPSURBVEjH7cEBAQAAAIIg/69uSEAAAAB4P3gAAeJH5LkAAAAASUVORK5CYII=";
+
+  (function loadAvatar(url) {
+    if (!url) {
+      avatarImg.src = FALLBACK_TRANSPARENT_PNG;
+    } else {
+      const test = new Image();
+      test.decoding = "async";
+      test.referrerPolicy = "no-referrer";
+      test.onload = () => { avatarImg.src = url; };
+      test.onerror = () => { avatarImg.src = FALLBACK_TRANSPARENT_PNG; };
+      test.src = url;
+    }
+  })(avatarUrl);
 
   avatarWrap.appendChild(avatarImg);
   document.body.appendChild(avatarWrap);
@@ -224,4 +240,71 @@
     input.value = "";
     try {
       const res = await fetch(`${apiBase}/chat`, {
-        method: "
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pageUrl: scrapeUrl,
+          url: scrapeUrl,          // send both for compatibility
+          lead,
+          message,
+          mode: scrapeMode,
+          source: "widget",
+          site: location.hostname,
+          referrer: document.referrer || null
+        })
+      });
+      if (!res.ok) {
+        addMsg(`I had trouble replying just now (status ${res.status}).`);
+        return;
+      }
+      const data = await res.json();
+      addMsg(data.reply || data.answer || data.message || "I had trouble replying just now.");
+    } catch {
+      addMsg("I had trouble replying just now.");
+    }
+  }
+
+  function kickoffScrape() {
+    // Fire-and-forget scrape ping
+    fetch(`${apiBase}/scrape`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: scrapeUrl,            // primary key many scrapers expect
+        pageUrl: scrapeUrl,
+        mode: scrapeMode,
+        source: "widget",
+        site: location.hostname,
+        referrer: document.referrer || null
+      })
+    }).catch(() => {});
+  }
+
+  function startChat(user) {
+    lead = user;
+    chat.style.display = "flex";
+    addMsg(greeting);
+    kickoffScrape();
+  }
+
+  avatarWrap.onclick = () => {
+    if (!lead) {
+      showLeadModal(startChat);
+    } else {
+      chat.style.display = chat.style.display === "none" ? "flex" : "none";
+    }
+  };
+
+  closeBtn.onclick = () => {
+    chat.style.display = "none";
+  };
+
+  sendBtn.onclick = () => {
+    const msg = input.value.trim();
+    if (msg) sendToBot(msg);
+  };
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendBtn.click();
+  });
+})();

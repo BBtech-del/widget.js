@@ -1,5 +1,5 @@
+<script>
 (function () {
-  // ===== Config =====
   const cfg = window.BizBuildConfig || {};
   const theme = cfg.theme || {
     background: "#ffffff",
@@ -13,7 +13,6 @@
   const scrapeUrl = cfg.scrapeUrl || window.location.href;
   const apiBase = (cfg.api || "https://bizbuild-scraper.oluwasanu.workers.dev").replace(/\/+$/, "");
 
-  // ===== Styles =====
   const style = document.createElement("style");
   style.textContent = `
     @keyframes bb-breathing {
@@ -30,10 +29,6 @@
       border: none !important;
       box-shadow: none !important;
       animation: bb-breathing 4s ease-in-out infinite;
-      -webkit-tap-highlight-color: transparent;
-      backface-visibility: hidden;
-      transform: translateZ(0);
-      will-change: transform;
       pointer-events: auto;
     }
     .bb-avatar-img {
@@ -110,7 +105,6 @@
   `;
   document.head.appendChild(style);
 
-  // ===== Avatar =====
   const avatarWrap = document.createElement("div");
   avatarWrap.className = "bb-avatar-wrap";
   avatarWrap.setAttribute("role", "button");
@@ -126,7 +120,6 @@
   avatarWrap.appendChild(avatarImg);
   document.body.appendChild(avatarWrap);
 
-  // ===== Lead Modal =====
   function showLeadModal(onSubmit) {
     if (document.querySelector(".bb-overlay")) return;
 
@@ -170,7 +163,6 @@
     document.body.appendChild(overlay);
   }
 
-  // ===== Chat UI =====
   const chat = document.createElement("div");
   chat.className = "bb-chat";
   chat.innerHTML = `
@@ -186,7 +178,6 @@
   `;
   document.body.appendChild(chat);
 
-  // ===== Chat Logic =====
   const body = chat.querySelector("#bb-body");
   const input = chat.querySelector("#bb-input");
   const sendBtn = chat.querySelector("#bb-send");
@@ -210,3 +201,14 @@
 
     try {
       const res = await fetch(`${apiBase}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pageUrl: scrapeUrl,
+          url: scrapeUrl,
+          lead,
+          message,
+          faqData,
+          mode: scrapeMode,
+          source: "widget",
+          site: location

@@ -1,4 +1,5 @@
 (function () {
+  // 🔷 START: Config Setup Section
   const config = window.BizBuildConfig || {};
   const theme = config.theme || {
     background: "#ffffff",
@@ -12,7 +13,9 @@
   const scrapeMode = config.scrape || "page";
   const scrapeUrl = config.scrapeUrl || window.location.href;
   const apiBase = "https://bizbuild-scraper.oluwasanu.workers.dev";
+  // 🔷 END: Config Setup Section
 
+  // 🔷 START: Style Injection Section
   const style = document.createElement("style");
   style.textContent = `
     @keyframes bb-breathing { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
@@ -32,10 +35,15 @@
     }
   `;
   document.head.appendChild(style);
+  // 🔷 END: Style Injection Section
 
+  // 🔷 START: Avatar Setup Section
   const avatar = document.createElement("div");
   avatar.className = "bb-avatar";
   document.body.appendChild(avatar);
+  // 🔷 END: Avatar Setup Section
+
+  // 🔷 START: Lead Modal Section
   function showLeadModal(onSubmit) {
     if (document.querySelector(".bb-overlay")) return;
     const overlay = document.createElement("div");
@@ -68,7 +76,9 @@
     overlay.appendChild(card);
     document.body.appendChild(overlay);
   }
+  // 🔷 END: Lead Modal Section
 
+  // 🔷 START: Chat UI Section
   const chat = document.createElement("div");
   chat.style.cssText = `
     position: fixed; bottom: 100px; right: 20px; width: 360px; height: 500px;
@@ -90,8 +100,10 @@
     </div>
   `;
   document.body.appendChild(chat);
+  // 🔷 END: Chat UI Section
 
-   const body = chat.querySelector("#bb-body");
+  // 🔷 START: Chat Logic Section
+  const body = chat.querySelector("#bb-body");
   const input = chat.querySelector("#bb-input");
   const sendBtn = chat.querySelector("#bb-send");
   const closeBtn = chat.querySelector("#bb-close");
@@ -155,4 +167,5 @@
   input.onkeydown = (e) => {
     if (e.key === "Enter") sendBtn.click();
   };
+  // 🔷 END: Chat Logic Section
 })();

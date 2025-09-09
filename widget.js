@@ -1,19 +1,19 @@
 (function () {
-  // 🔷 Config Setup
-  const config = window.BizBuildConfig || {};
-  const theme = config.theme || {
+  // ===== Config =====
+  const cfg = window.BizBuildConfig || {};
+  const theme = cfg.theme || {
     background: "#ffffff",
     text: "#222222",
     accent: "#4a90e2",
     primary: "#4a90e2"
   };
-  const avatarUrl = config.avatar || "";
-  const greeting = config.greeting || "Howdy! How may I help you?";
-  const scrapeMode = config.scrape || "page";
-  const scrapeUrl = config.scrapeUrl || window.location.href;
-  const apiBase = config.api || "https://bizbuild-scraper.oluwasanu.workers.dev";
+  const avatarUrl = cfg.avatar || "";
+  const greeting = cfg.greeting || "Howdy! How may I help you?";
+  const scrapeMode = cfg.scrape || "page";
+  const scrapeUrl = cfg.scrapeUrl || window.location.href; // override via embed for client site
+  const apiBase = (cfg.api || "https://bizbuild-scraper.oluwasanu.workers.dev").replace(/\/+$/, "");
 
-  // 🔷 Style Injection
+  // ===== Styles (no opacity changes; no backgrounds, borders or shadows) =====
   const style = document.createElement("style");
   style.textContent = `
     @keyframes bb-breathing {
@@ -24,20 +24,27 @@
     .bb-avatar-wrap {
       position: fixed; bottom: 20px; right: 20px;
       width: 72px; height: 72px;
-      border-radius: 50%; cursor: pointer;
-      z-index: 999999;
-      animation: bb-breathing 4s ease-in-out infinite;
       display: flex; align-items: center; justify-content: center;
-      background: transparent;
-      box-shadow: none;
-      padding: 0; margin: 0;
+      border-radius: 50%;
+      z-index: 2147483647;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      animation: bb-breathing 4s ease-in-out infinite;
+      -webkit-tap-highlight-color: transparent;
+      backface-visibility: hidden;
+      transform: translateZ(0);
+      will-change: transform;
+      pointer-events: auto;
     }
 
     .bb-avatar-img {
       width: 100%; height: 100%;
       border-radius: 50%;
       object-fit: cover;
+      display: block;
       background: transparent;
+      border: none;
       pointer-events: none;
     }
 
@@ -45,91 +52,156 @@
       position: fixed; inset: 0;
       background: transparent;
       display: flex; align-items: center; justify-content: center;
-      z-index: 999998;
+      z-index: 2147483646;
     }
+
+    .bb-card {
+      background: ${theme.background};
+      color: ${theme.text};
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      max-width: 400px; width: 100%;
+      position: relative;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    }
+
+    .bb-card-close {
+      position: absolute; top: 10px; right: 10px;
+      cursor: pointer; font-size: 18px; font-weight: bold;
+      line-height: 1; color: ${theme.text};
+      background: transparent; border: none;
+    }
+
+    /* Force stacked inputs on all devices */
+    .bb-card .bb-input {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      background: #fff;
+      color: #111;
+    }
+
+    .bb-send {
+      padding: 10px 14px;
+      background: ${theme.primary};
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .bb-chat {
+      position: fixed; bottom: 100px; right: 20px;
+      width: 360px; height: 500px;
+      background: ${theme.background};
+      color: ${theme.text};
+      border: 1px solid ${theme.accent};
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      display: none; flex-direction: column;
+      z-index: 2147483645; overflow: hidden;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    }
+
+    .bb-chat-header {
+      padding: 10px; background: ${theme.primary}; color: #fff;
+      font-weight: bold; display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .bb-chat-body { flex: 1; padding: 10px; overflow-y: auto; }
+    .bb-chat-inputbar { display: flex; padding: 10px; border-top: 1px solid #eee; gap: 8px; }
+
+    .bb-chat-inputbar .bb-input {
+      flex: 1; margin: 0; /* override modal margins */
+    }
+
+    .bb-msg { margin: 8px 0; }
+    .bb-msg.user { text-align: right; color: ${theme.accent}; }
+    .bb-msg.bot { text-align: left; color: ${theme.text}; }
   `;
   document.head.appendChild(style);
 
-  // 🔷 Avatar Setup
+  // ===== Avatar (uses <img>, not CSS background) =====
   const avatarWrap = document.createElement("div");
   avatarWrap.className = "bb-avatar-wrap";
+  avatarWrap.setAttribute("role", "button");
+  avatarWrap.setAttribute("aria-label", "Open chat");
 
   const avatarImg = document.createElement("img");
   avatarImg.className = "bb-avatar-img";
-  avatarImg.src = avatarUrl;
   avatarImg.alt = "Assistant avatar";
+  avatarImg.decoding = "async";
+  avatarImg.referrerPolicy = "no-referrer";
+  avatarImg.src = avatarUrl;
+
   avatarWrap.appendChild(avatarImg);
   document.body.appendChild(avatarWrap);
 
-  // 🔷 Lead Modal
+  // ===== Lead Modal =====
   function showLeadModal(onSubmit) {
     if (document.querySelector(".bb-overlay")) return;
+
     const overlay = document.createElement("div");
     overlay.className = "bb-overlay";
 
     const card = document.createElement("div");
-    card.style.cssText = `
-      background: ${theme.background}; color: ${theme.text};
-      padding: 20px; border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-      max-width: 400px; width: 100%;
-      font-family: sans-serif; position: relative;
-    `;
-
+    card.className = "bb-card";
     card.innerHTML = `
-      <div style="position:absolute; top:10px; right:10px; cursor:pointer; font-size:18px; font-weight:bold;" id="bb-lead-close">×</div>
+      <button class="bb-card-close" aria-label="Close">×</button>
       <div style="font-size:18px; font-weight:bold; margin-bottom:10px;">👋 Welcome! I'm here to help...</div>
-      <div style="margin-bottom:16px;">Before we begin, may I have your name and email?</div>
-      <input type="text" placeholder="Your name" style="width:100%; margin-bottom:10px; padding:10px; border-radius:8px; border:1px solid #ccc;" />
-      <input type="email" placeholder="you@example.com" style="width:100%; margin-bottom:10px; padding:10px; border-radius:8px; border:1px solid #ccc;" />
-      <button style="width:100%; padding:10px; background:${theme.primary}; color:#fff; border:none; border-radius:8px; font-weight:bold;">Start Chat</button>
+      <div style="margin-bottom:6px;">May I have your name and email?</div>
+      <input type="text" placeholder="Your name" class="bb-input" />
+      <input type="email" placeholder="you@example.com" class="bb-input" />
+      <button class="bb-send" style="width:100%; margin-top:6px;">Start Chat</button>
     `;
 
-    const [nameInput, emailInput, button] = card.querySelectorAll("input, input, button");
-    const closeBtn = card.querySelector("#bb-lead-close");
+    const nameInput = card.querySelectorAll(".bb-input")[0];
+    const emailInput = card.querySelectorAll(".bb-input")[1];
+    const startBtn = card.querySelector(".bb-send");
+    const closeBtn = card.querySelector(".bb-card-close");
 
-    button.onclick = () => {
+    const closeOverlay = () => {
+      if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    };
+
+    startBtn.onclick = () => {
       const name = nameInput.value.trim();
       const email = emailInput.value.trim();
       if (!name || !email || !email.includes("@")) return;
-      document.body.removeChild(overlay);
+      closeOverlay();
       startChat({ name, email });
     };
 
-    closeBtn.onclick = () => {
-      document.body.removeChild(overlay);
-    };
+    closeBtn.onclick = closeOverlay;
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeOverlay();
+    });
 
     overlay.appendChild(card);
     document.body.appendChild(overlay);
   }
 
-  // 🔷 Chat UI
+  // ===== Chat UI =====
   const chat = document.createElement("div");
-  chat.style.cssText = `
-    position: fixed; bottom: 100px; right: 20px;
-    width: 360px; height: 500px;
-    background: ${theme.background}; color: ${theme.text};
-    border: 1px solid ${theme.accent}; border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-    display: none; flex-direction: column;
-    z-index: 999997; overflow: hidden;
-  `;
-
+  chat.className = "bb-chat";
   chat.innerHTML = `
-    <div style="padding:10px; background:${theme.primary}; color:#fff; font-weight:bold; display:flex; justify-content:space-between;">
+    <div class="bb-chat-header">
       <span>Chat</span>
-      <span style="cursor:pointer; font-weight:bold;" id="bb-close">×</span>
+      <button class="bb-send" id="bb-close" aria-label="Close chat" style="background:transparent;border:none;color:#fff;font-weight:bold;font-size:18px;padding:0;">×</button>
     </div>
-    <div id="bb-body" style="flex:1; padding:10px; overflow-y:auto;"></div>
-    <div style="display:flex; padding:10px; border-top:1px solid #eee;">
-      <input id="bb-input" placeholder="Type your message..." style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;" />
-      <button id="bb-send" style="margin-left:8px; padding:10px; background:${theme.primary}; color:#fff; border:none; border-radius:8px;">Send</button>
+    <div class="bb-chat-body" id="bb-body"></div>
+    <div class="bb-chat-inputbar">
+      <input class="bb-input" id="bb-input" placeholder="Type your message..." />
+      <button class="bb-send" id="bb-send">Send</button>
     </div>
   `;
   document.body.appendChild(chat);
 
-  // 🔷 Chat Logic
+  // ===== Chat Logic =====
   const body = chat.querySelector("#bb-body");
   const input = chat.querySelector("#bb-input");
   const sendBtn = chat.querySelector("#bb-send");
@@ -138,12 +210,10 @@
   let lead = null;
 
   function addMsg(text, who = "bot") {
-    const msg = document.createElement("div");
-    msg.style.margin = "8px 0";
-    msg.style.textAlign = who === "user" ? "right" : "left";
-    msg.style.color = who === "user" ? theme.accent : theme.text;
-    msg.innerText = text;
-    body.appendChild(msg);
+    const div = document.createElement("div");
+    div.className = `bb-msg ${who}`;
+    div.textContent = text;
+    body.appendChild(div);
     body.scrollTop = body.scrollHeight;
   }
 
@@ -156,35 +226,47 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           pageUrl: scrapeUrl,
+          url: scrapeUrl,          // send both for compatibility
           lead,
           message,
           mode: scrapeMode,
           source: "widget",
-          site: location.hostname
+          site: location.hostname,
+          referrer: document.referrer || null
         })
       });
+      if (!res.ok) {
+        addMsg(`I had trouble replying just now (status ${res.status}).`);
+        return;
+      }
       const data = await res.json();
-      addMsg(data.reply || "I had trouble replying just now. Please try again.");
+      addMsg(data.reply || data.answer || data.message || "I had trouble replying just now.");
     } catch {
-      addMsg("I had trouble replying just now. Please try again.");
+      addMsg("I had trouble replying just now.");
     }
+  }
+
+  function kickoffScrape() {
+    // Fire-and-forget scrape ping
+    fetch(`${apiBase}/scrape`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: scrapeUrl,            // primary key many scrapers expect
+        pageUrl: scrapeUrl,
+        mode: scrapeMode,
+        source: "widget",
+        site: location.hostname,
+        referrer: document.referrer || null
+      })
+    }).catch(() => {});
   }
 
   function startChat(user) {
     lead = user;
     chat.style.display = "flex";
     addMsg(greeting);
-    fetch(`${apiBase}/scrape`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        url: scrapeUrl,
-        pageUrl: scrapeUrl,
-        mode: scrapeMode,
-        source: "widget",
-        site: location.hostname
-      })
-    }).catch(() => {});
+    kickoffScrape();
   }
 
   avatarWrap.onclick = () => {
@@ -204,7 +286,7 @@
     if (msg) sendToBot(msg);
   };
 
-  input.onkeydown = (e) => {
+  input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") sendBtn.click();
-  };
+  });
 })();

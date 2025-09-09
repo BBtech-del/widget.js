@@ -153,7 +153,7 @@
     card.innerHTML = `
       <button class="bb-card-close" aria-label="Close">×</button>
       <div style="font-size:18px; font-weight:bold; margin-bottom:10px;">👋 Welcome! I'm here to help...</div>
-      <div style="margin-bottom:6px;">May I have your name and email?</div>
+      <div style="margin-bottom:6px;">Before We begin, may I have your name and email?</div>
       <input type="text" placeholder="Your name" class="bb-input" />
       <input type="email" placeholder="you@example.com" class="bb-input" />
       <button class="bb-send" style="width:100%; margin-top:6px;">Start Chat</button>

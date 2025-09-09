@@ -14,7 +14,6 @@
 
   // --- Auto-detect CRM endpoint if not provided ---
   function detectCRMEndpoint() {
-    // Look for forms with an action attribute containing crm/lead/form
     const forms = document.querySelectorAll("form[action]");
     for (let form of forms) {
       const action = form.getAttribute("action");
@@ -22,10 +21,8 @@
         return new URL(action, window.location.origin).href;
       }
     }
-    // Look for meta tag
     const meta = document.querySelector("meta[name='crm-endpoint']");
     if (meta && meta.content) return meta.content;
-    // Look for global JS var
     if (window.CRM_ENDPOINT) return window.CRM_ENDPOINT;
     return null;
   }
@@ -81,7 +78,7 @@
   `;
   document.head.appendChild(style);
 
-  // Create avatar button
+  // Create avatar button with preload + fallback
   const avatarWrap = document.createElement("div");
   avatarWrap.style.position = "fixed";
   avatarWrap.style.bottom = "60px"; // raised higher on desktop
@@ -89,10 +86,21 @@
   avatarWrap.style.width = "60px";
   avatarWrap.style.height = "60px";
   avatarWrap.style.borderRadius = "50%";
-  avatarWrap.style.background = `url(${avatarUrl}) center/cover no-repeat`;
   avatarWrap.style.cursor = "pointer";
   avatarWrap.style.zIndex = "9999";
   avatarWrap.style.animation = "breathing 3s ease-in-out infinite";
+  avatarWrap.style.background = theme.primary; // fallback color
+
+  if (avatarUrl) {
+    const img = new Image();
+    img.onload = () => {
+      avatarWrap.style.background = `url(${avatarUrl}) center/cover no-repeat`;
+    };
+    img.onerror = () => {
+      avatarWrap.style.background = theme.primary;
+    };
+    img.src = avatarUrl;
+  }
 
   // Create chat container
   const chat = document.createElement("div");
@@ -218,12 +226,4 @@
     card.querySelector(".bb-card-close").onclick = () => overlay.remove();
     card.querySelector(".bb-send").onclick = () => {
       const name = card.querySelector("input[type=text]").value.trim();
-      const email = card.querySelector("input[type=email]").value.trim();
-      if (!name || !email) {
-        alert("Please enter both name and email.");
-        return;
-      }
-      lead = { name, email };
-      overlay.remove();
-
-      // Send lead to client's CRM/form if provided
+      const email = card

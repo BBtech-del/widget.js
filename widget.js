@@ -224,6 +224,4 @@
     document.body.appendChild(overlay);
 
     card.querySelector(".bb-card-close").onclick = () => overlay.remove();
-    card.querySelector(".bb-send").onclick = () => {
-      const name = card.querySelector("input[type=text]").value.trim();
-      const email = card
+    card

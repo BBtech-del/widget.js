@@ -12,7 +12,7 @@
 
   let lead = null;
 
-  // Inject breathing animation CSS + modal styles
+  // Inject styles
   const style = document.createElement("style");
   style.textContent = `
     @keyframes breathing {
@@ -35,11 +35,12 @@
       position: relative;
       font-family: sans-serif;
     }
-    .bb-card-close {
+    .bb-card-close, .bb-chat-close {
       position: absolute;
       top: 8px; right: 8px;
       background: none; border: none;
       font-size: 18px; cursor: pointer;
+      color: #666;
     }
     .bb-input {
       width: 100%;
@@ -59,7 +60,7 @@
   `;
   document.head.appendChild(style);
 
-  // Create avatar button
+  // Avatar
   const avatarWrap = document.createElement("div");
   avatarWrap.style.position = "fixed";
   avatarWrap.style.bottom = "20px";
@@ -72,7 +73,7 @@
   avatarWrap.style.zIndex = "9999";
   avatarWrap.style.animation = "breathing 3s ease-in-out infinite";
 
-  // Create chat container
+  // Chat container
   const chat = document.createElement("div");
   chat.style.position = "fixed";
   chat.style.bottom = "90px";
@@ -86,6 +87,13 @@
   chat.style.display = "none";
   chat.style.flexDirection = "column";
   chat.style.zIndex = "9999";
+  chat.style.position = "fixed";
+
+  // Chat close button
+  const chatClose = document.createElement("button");
+  chatClose.className = "bb-chat-close";
+  chatClose.innerHTML = "×";
+  chatClose.onclick = () => chat.style.display = "none";
 
   const messages = document.createElement("div");
   messages.style.flex = "1";
@@ -113,6 +121,7 @@
 
   inputWrap.appendChild(input);
   inputWrap.appendChild(sendBtn);
+  chat.appendChild(chatClose);
   chat.appendChild(messages);
   chat.appendChild(inputWrap);
   document.body.appendChild(avatarWrap);
@@ -162,10 +171,10 @@
 
   function startChat() {
     chat.style.display = "flex";
-    addMsg(greeting);
+    if (messages.childElementCount === 0) addMsg(greeting);
   }
 
-  // ===== Lead Modal =====
+  // Lead Modal
   function showLeadModal(onSubmit) {
     if (document.querySelector(".bb-overlay")) return;
 
@@ -197,7 +206,6 @@
       lead = { name, email };
       overlay.remove();
 
-      // Send lead to client's CRM/form if provided
       if (cfg.leadCaptureUrl) {
         fetch(cfg.leadCaptureUrl, {
           method: "POST",
@@ -223,10 +231,3 @@
 
   sendBtn.onclick = () => {
     const msg = input.value.trim();
-    if (msg) sendToBot(msg);
-  };
-
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") sendBtn.click();
-  });
-})();

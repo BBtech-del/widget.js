@@ -277,4 +277,4 @@
     const msg = input.value.trim();
     if (msg) sendToBot(msg);
   };
-  input.addEventListener("keydown
+  input.addEventListener("keydown", e => {

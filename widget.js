@@ -13,6 +13,9 @@
   const userMsgBg = theme.userMsgBg || primary;
   const botMsgBg = theme.botMsgBg || "#e0e0e0";
 
+  let bubbleClosed = false;
+  let chatOpened = false;
+
   // Inject styles
   const style = document.createElement("style");
   style.textContent = `
@@ -97,6 +100,29 @@
       padding: 10px 15px;
       cursor: pointer;
     }
+    .bb-bubble {
+      position: fixed;
+      bottom: 130px;
+      right: 20px;
+      background: ${primary};
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 16px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 9999;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .bb-bubble button {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      margin-left: 4px;
+    }
   `;
   document.head.appendChild(style);
 
@@ -143,6 +169,17 @@
   chat.appendChild(inputBar);
   document.body.appendChild(chat);
 
+  // Bubble above avatar
+  const bubble = document.createElement("div");
+  bubble.className = "bb-bubble";
+  bubble.innerHTML = `Hi 👋, I'm here to help <button aria-label="Close bubble">×</button>`;
+  const bubbleCloseBtn = bubble.querySelector("button");
+  bubbleCloseBtn.onclick = () => {
+    bubble.remove();
+    bubbleClosed = true;
+  };
+  document.body.appendChild(bubble);
+
   function addMsg(text, from = "bot") {
     const msg = document.createElement("div");
     msg.textContent = text;
@@ -185,18 +222,6 @@
     }
   }
 
-  avatar.onclick = () => {
-    chat.style.display = chat.style.display === "none" ? "flex" : "none";
-    if (chat.style.display === "flex" && messages.childElementCount === 0) {
-      addMsg(greeting);
-    }
-  };
-
-  sendBtn.onclick = () => {
-    const msg = input.value.trim();
-    if (msg) sendToBot(msg);
-  };
-  input.addEventListener("keydown", e => {
-    if (e.key === "Enter") sendBtn.click();
-  });
-})();
+  function openChat() {
+    chat.style.display = "flex";
+    if (messages.childElementCount

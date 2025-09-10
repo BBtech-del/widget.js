@@ -166,13 +166,6 @@
   chat.appendChild(inputBar);
   document.body.appendChild(chat);
 
-  // Bubble above avatar
-  const bubble = document.createElement("div");
-  bubble.className = "bb-bubble";
-  bubble.innerHTML = `Hi 👋, I'm here to help <button aria-label="Close bubble">×</button>`;
-  const bubbleCloseBtn = bubble.querySelector("button");
-  bubbleCloseBtn.onclick = () => bubble.remove();
-  document.body.appendChild(bubble);
 
   function addMsg(text, from = "bot") {
     const msg = document.createElement("div");

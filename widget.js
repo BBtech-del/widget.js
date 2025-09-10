@@ -6,11 +6,12 @@
   const botImage = cfg.botImage || avatarUrl;
   const greeting = cfg.greeting || "Hi! How can I help you today?";
   const apiBase = (cfg.api || "").replace(/\/+$/, "");
-  const theme = cfg.theme || {
-    background: "#ffffff",
-    text: "#222222",
-    primary: "#4a90e2"
-  };
+  const theme = cfg.theme || {};
+  const background = theme.background || "#ffffff";
+  const textColor = theme.text || "#222222";
+  const primary = theme.primary || "#4a90e2";
+  const userMsgBg = theme.userMsgBg || primary;
+  const botMsgBg = theme.botMsgBg || "#e0e0e0";
 
   // Inject styles
   const style = document.createElement("style");
@@ -38,9 +39,9 @@
       right: 20px;
       width: 320px;
       height: 400px;
-      background: ${theme.background};
-      color: ${theme.text};
-      border: 1px solid ${theme.primary};
+      background: ${background};
+      color: ${textColor};
+      border: 1px solid ${primary};
       border-radius: 8px;
       display: none;
       flex-direction: column;
@@ -51,7 +52,7 @@
     .bb-chat-header {
       display: flex;
       align-items: center;
-      background: ${theme.primary};
+      background: ${primary};
       color: #fff;
       padding: 8px;
     }
@@ -76,10 +77,13 @@
       flex: 1;
       overflow-y: auto;
       padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
     .bb-inputbar {
       display: flex;
-      border-top: 1px solid ${theme.primary};
+      border-top: 1px solid ${primary};
     }
     .bb-inputbar input {
       flex: 1;
@@ -87,7 +91,7 @@
       padding: 10px;
     }
     .bb-inputbar button {
-      background: ${theme.primary};
+      background: ${primary};
       color: #fff;
       border: none;
       padding: 10px 15px;
@@ -149,12 +153,12 @@
     msg.style.wordWrap = "break-word";
     msg.style.display = "inline-block";
     if (from === "bot") {
-      msg.style.background = theme.primary;
-      msg.style.color = "#fff";
+      msg.style.background = botMsgBg;
+      msg.style.color = "#000";
       msg.style.alignSelf = "flex-start";
     } else {
-      msg.style.background = "#e0e0e0";
-      msg.style.color = "#000";
+      msg.style.background = userMsgBg;
+      msg.style.color = "#fff";
       msg.style.alignSelf = "flex-end";
     }
     messages.appendChild(msg);
@@ -179,11 +183,6 @@
     } catch {
       addMsg("I had trouble replying just now.");
     }
-  }
-
-  function startChat() {
-    chat.style.display = "flex";
-    if (messages.childElementCount === 0) addMsg(greeting);
   }
 
   avatar.onclick = () => {

@@ -247,14 +247,7 @@
       }
       const data = await res.json();
       let botReply = data.reply || data.answer || data.message || "I had trouble replying just now.";
-      const lowerReply = botReply.trim().toLowerCase();
-      if (
-        lowerReply === "i don't know" ||
-        lowerReply.includes("i don't have") ||
-        lowerReply.includes("i am not sure") ||
-        lowerReply.includes("i do not know") ||
-        (lowerReply.includes("sorry") && lowerReply.includes("don't know"))
-      ) {
+      if (botReply.trim().toLowerCase() === "i don't know") {
         botReply = "I’m sorry, I don’t have that information right now. Could you try rephrasing your question?";
       }
       addMsg(botReply);
@@ -275,4 +268,10 @@
   };
 
   sendBtn.onclick = () => {
-    const msg =
+    const msg = input.value.trim();
+    if (msg) sendToBot(msg);
+  };
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") sendBtn.click();
+  });
+})();

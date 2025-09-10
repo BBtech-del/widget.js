@@ -268,3 +268,7 @@
   };
 
   sendBtn.onclick = () => {
+    const msg = input.value.trim();
+    if (msg) sendToBot(msg);
+  };
+  input.addEventListener("keydown", e =>

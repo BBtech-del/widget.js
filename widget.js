@@ -271,4 +271,7 @@
     const msg = input.value.trim();
     if (msg) sendToBot(msg);
   };
-  input.addEventListener("keydown", e =>
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") sendBtn.click();
+  });
+})();

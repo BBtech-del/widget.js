@@ -21,6 +21,11 @@
       50% { transform: scale(1.05); }
       100% { transform: scale(1); }
     }
+    @keyframes blink {
+      0% { opacity: 0.2; }
+      20% { opacity: 1; }
+      100% { opacity: 0.2; }
+    }
     .bb-avatar {
       position: fixed;
       bottom: 60px;
@@ -120,6 +125,25 @@
       cursor: pointer;
       margin-left: 4px;
     }
+    .bb-typing {
+      display: inline-block;
+      background: ${botMsgBg};
+      color: #000;
+      padding: 8px;
+      border-radius: 6px;
+      max-width: 80%;
+      align-self: flex-start;
+      font-style: italic;
+    }
+    .bb-typing span {
+      animation: blink 1.4s infinite both;
+    }
+    .bb-typing span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .bb-typing span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
   `;
   document.head.appendChild(style);
 
@@ -166,7 +190,6 @@
   chat.appendChild(inputBar);
   document.body.appendChild(chat);
 
-
   function addMsg(text, from = "bot") {
     const msg = document.createElement("div");
     msg.textContent = text;
@@ -187,24 +210,49 @@
     }
     messages.appendChild(msg);
     messages.scrollTop = messages.scrollHeight;
+    return msg;
+  }
+
+  // Typing indicator helpers
+  let typingEl = null;
+  function showTyping() {
+    hideTyping();
+    typingEl = document.createElement("div");
+    typingEl.className = "bb-typing";
+    typingEl.innerHTML = "<span>.</span><span>.</span><span>.</span>";
+    messages.appendChild(typingEl);
+    messages.scrollTop = messages.scrollHeight;
+  }
+  function hideTyping() {
+    if (typingEl) {
+      typingEl.remove();
+      typingEl = null;
+    }
   }
 
   async function sendToBot(message) {
     addMsg(message, "user");
     input.value = "";
+    showTyping();
     try {
       const res = await fetch(`${apiBase}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clientId, message })
       });
+      hideTyping();
       if (!res.ok) {
         addMsg(`I had trouble replying just now (status ${res.status}).`);
         return;
       }
       const data = await res.json();
-      addMsg(data.reply || data.answer || data.message || "I had trouble replying just now.");
+      let botReply = data.reply || data.answer || data.message || "I had trouble replying just now.";
+      if (botReply.trim().toLowerCase() === "i don't know") {
+        botReply = "I’m sorry, I don’t have that information right now. Could you try rephrasing your question?";
+      }
+      addMsg(botReply);
     } catch {
+      hideTyping();
       addMsg("I had trouble replying just now.");
     }
   }
@@ -216,7 +264,7 @@
 
   avatar.onclick = () => {
     openChat();
-    bubble.remove();
+    bubble?.remove?.();
   };
 
   sendBtn.onclick = () => {

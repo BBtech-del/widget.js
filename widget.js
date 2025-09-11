@@ -144,19 +144,6 @@
     .bb-typing span:nth-child(3) {
       animation-delay: 0.4s;
     }
-
-    /* Mobile-only positioning fix */
-    @media (max-width: 600px) {
-      .bb-chat {
-        bottom: 60px;
-      }
-      .bb-avatar {
-        bottom: 20px;
-      }
-      .bb-bubble {
-        bottom: 60px;
-      }
-    }
   `;
   document.head.appendChild(style);
 
@@ -280,4 +267,11 @@
     bubble?.remove?.();
   };
 
-  sendBtn.onclick =
+  sendBtn.onclick = () => {
+    const msg = input.value.trim();
+    if (msg) sendToBot(msg);
+  };
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") sendBtn.click();
+  });
+})();

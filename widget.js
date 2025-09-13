@@ -152,6 +152,15 @@
   avatar.className = "bb-avatar";
   document.body.appendChild(avatar);
 
+  // --- start 100+ chat head ---
+const langBubble = document.createElement("div");
+langBubble.className = "bb-bubble";
+langBubble.innerHTML = `Hi 👋 I'm fluent in 100+ languages <button aria-label="Close">×</button>`;
+langBubble.querySelector("button").onclick = () => langBubble.remove();
+document.body.appendChild(langBubble);
+// --- end chat bubble 100+ language ---
+
+
   // Chat container
   const chat = document.createElement("div");
   chat.className = "bb-chat";

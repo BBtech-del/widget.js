@@ -37,10 +37,14 @@
   cursor: pointer;
   z-index: 9999;
   animation: breathing 3s ease-in-out infinite;
-
-  /* Transparent bubble ring */
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(2px);
+  * Bubble effect */
+  background-color: rgba(255, 255, 255, 0.15); /* transparent fill */
+  box-shadow:
+    inset 0 0 8px rgba(255, 255, 255, 0.6), /* inner glow */
+    0 4px 12px rgba(0, 0, 0, 0.25),         /* drop shadow */
+    0 0 20px rgba(255, 255, 255, 0.3);      /* outer glow */
+  backdrop-filter: blur(4px);               /* glassy look */
+  border: 1px solid rgba(255, 255, 255, 0.4); /* subtle edge */
 }
 
     .bb-chat {

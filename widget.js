@@ -27,17 +27,22 @@
       100% { opacity: 0.2; }
     }
     .bb-avatar {
-      position: fixed;
-      bottom: 60px;
-      right: 20px;
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background: url(${avatarUrl}) center/cover no-repeat;
-      cursor: pointer;
-      z-index: 9999;
-      animation: breathing 3s ease-in-out infinite;
-    }
+  position: fixed;
+  bottom: 60px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: url(${avatarUrl}) center/cover no-repeat;
+  cursor: pointer;
+  z-index: 9999;
+  animation: breathing 3s ease-in-out infinite;
+
+  /* Transparent bubble ring */
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(2px);
+}
+
     .bb-chat {
       position: fixed;
       bottom: 130px;

@@ -126,13 +126,13 @@
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
-/* Mobile: Mobile adjustment */
+/* Mobile adjustment */
 @media (max-width: 600px) {
   .bb-bubble {
-    bottom: 20px;       /* same as avatar bottom */
-    right: 90px;        /* push it left of avatar */
+    bottom: 85px; /* lower for mobile */
   }
 }
+
 
     .bb-bubble button {
       background: transparent;

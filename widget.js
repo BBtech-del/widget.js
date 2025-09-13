@@ -28,7 +28,7 @@
     }
     .bb-avatar {
   position: fixed;
-  bottom: 60px;
+  bottom: 20px;
   right: 20px;
   width: 60px;
   height: 60px;
@@ -38,13 +38,12 @@
   z-index: 9999;
   animation: breathing 3s ease-in-out infinite;
   * Bubble effect */
-  background-color: rgba(255, 255, 255, 0.15); /* transparent fill */
+  background-color: rgba(255, 255, 255, 0.12); /* subtle transparent fill */
   box-shadow:
-    inset 0 0 8px rgba(255, 255, 255, 0.6), /* inner glow */
+    inset 0 0 8px rgba(255, 255, 255, 0.5), /* inner glow */
     0 4px 12px rgba(0, 0, 0, 0.25),         /* drop shadow */
-    0 0 20px rgba(255, 255, 255, 0.3);      /* outer glow */
-  backdrop-filter: blur(4px);               /* glassy look */
-  border: 1px solid rgba(255, 255, 255, 0.4); /* subtle edge */
+    0 0 18px rgba(255, 255, 255, 0.25);     /* soft outer glow */
+  backdrop-filter: blur(4px);               /* glass effect */
 }
 
     .bb-chat {

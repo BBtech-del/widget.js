@@ -129,7 +129,7 @@
 /* Mobile adjustment */
 @media (max-width: 600px) {
   .bb-bubble {
-    bottom: 70px; /* lower for mobile */
+    bottom: 80px; /* lower for mobile */
   }
 }
 
@@ -171,7 +171,7 @@
   // --- start 100+ chat head ---
 const langBubble = document.createElement("div");
 langBubble.className = "bb-bubble";
-langBubble.innerHTML = `Hi 👋 I'm fluent in 100+ languages <button aria-label="Close">×</button>`;
+langBubble.innerHTML = `Hi 👋 I'm helpful in 100+ languages <button aria-label="Close">×</button>`;
 langBubble.querySelector("button").onclick = () => langBubble.remove();
 document.body.appendChild(langBubble);
 // --- end chat bubble 100+ language ---

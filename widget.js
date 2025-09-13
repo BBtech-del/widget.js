@@ -111,20 +111,28 @@
       cursor: pointer;
     }
     .bb-bubble {
-      position: fixed;
-      bottom: 90px;
-      right: 20px;
-      background: ${primary};
-      color: #fff;
-      padding: 8px 12px;
-      border-radius: 16px;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      z-index: 9999;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
+  position: fixed;
+  bottom: 90px; /* desktop/tablet default */
+  right: 20px;
+  background: ${primary};
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 9999;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* Mobile adjustment */
+@media (max-width: 600px) {
+  .bb-bubble {
+    bottom: 70px; /* lower for mobile */
+  }
+}
+
     .bb-bubble button {
       background: transparent;
       border: none;

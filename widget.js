@@ -112,7 +112,7 @@
     }
     .bb-bubble {
       position: fixed;
-      bottom: 130px;
+      bottom: 90px;
       right: 20px;
       background: ${primary};
       color: #fff;

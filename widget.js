@@ -129,7 +129,7 @@
 /* Mobile adjustment */
 @media (max-width: 600px) {
   .bb-bubble {
-    bottom: 80px; /* lower for mobile */
+    bottom: 85px; /* lower for mobile */
   }
 }
 

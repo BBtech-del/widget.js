@@ -2,7 +2,7 @@
   const cfg = window.MyBotConfig || {};
   const clientId = cfg.clientId || "default";
   const avatarUrl = cfg.avatar || "";
-  const botName = cfg.botName || "AVA";
+  const botName = cfg.botName || "Chatbot";
   const botImage = cfg.botImage || avatarUrl;
   const greeting = cfg.greeting || "Hi! How can I help you today?";
   const apiBase = (cfg.api || "").replace(/\/+$/, "");
@@ -16,6 +16,16 @@
   // Inject styles
   const style = document.createElement("style");
   style.textContent = `
+    @keyframes breathing {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    @keyframes blink {
+      0% { opacity: 0.2; }
+      20% { opacity: 1; }
+      100% { opacity: 0.2; }
+    }
     .bb-avatar {
   position: fixed;
   bottom: 20px;
@@ -158,6 +168,14 @@
   const avatar = document.createElement("div");
   avatar.className = "bb-avatar";
   document.body.appendChild(avatar);
+
+  // --- start 100+ chat head ---
+const langBubble = document.createElement("div");
+langBubble.className = "bb-bubble";
+langBubble.innerHTML = `Hi 👋 I'm fluent in 100+ languages <button aria-label="Close">×</button>`;
+langBubble.querySelector("button").onclick = () => langBubble.remove();
+document.body.appendChild(langBubble);
+// --- end chat bubble 100+ language ---
 
 
   // Chat container

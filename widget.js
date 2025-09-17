@@ -210,6 +210,10 @@ document.body.appendChild(langBubble);
   sendBtn.textContent = "Send";
   inputBar.appendChild(input);
   inputBar.appendChild(sendBtn);
+  const micBtn = document.createElement("button");
+micBtn.textContent = "🎤";
+inputBar.appendChild(micBtn);
+
 
   chat.appendChild(header);
   chat.appendChild(messages);
@@ -271,6 +275,21 @@ document.body.appendChild(langBubble);
       addMsg(`I had trouble replying just now (status ${res.status}).`);
       return;
     }
+    async function handleMicInput(audioBlob) {
+  const formData = new FormData();
+  formData.append("file", audioBlob, "speech.webm");
+
+  const sttResp = await fetch(`${apiBase}/stt`, { method: "POST", body: formData });
+  const sttData = await sttResp.json();
+  const userText = sttData.text || sttData.transcription || "";
+
+  if (userText) {
+    sendToBot(userText);   // ✅ reuse your existing flow
+  } else {
+    addMsg("Sorry, I couldn’t understand that.");
+  }
+}
+
     const data = await res.json();
     let botReply = data.reply || data.answer || data.message || "I had trouble replying just now.";
     if (botReply.trim().toLowerCase() === "i don't know") {
@@ -278,22 +297,22 @@ document.body.appendChild(langBubble);
     }
     addMsg(botReply);
 
-    // 🔊 NEW: Call /voice to get Alloy audio
-    try {
-      const voiceResp = await fetch(`${apiBase}/voice`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: botReply, voice: "alloy" })
-      });
-      if (voiceResp.ok) {
-        const blob = await voiceResp.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audio.play();
-      }
-    } catch (err) {
-      console.error("Voice playback failed", err);
-    }
+    // 🔊 Call /voice to get Alloy audio
+try {
+  const voiceResp = await fetch(`${apiBase}/voice`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: botReply, voice: "alloy" })
+  });
+  if (voiceResp.ok) {
+    const blob = await voiceResp.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.play();
+  }
+} catch (err) {
+  console.error("Voice playback failed", err);
+}
 
   } catch {
     hideTyping();
@@ -318,4 +337,27 @@ document.body.appendChild(langBubble);
   input.addEventListener("keydown", e => {
     if (e.key === "Enter") sendBtn.click();
   });
+let mediaRecorder;
+let audioChunks = [];
+
+micBtn.onclick = async () => {
+  if (!mediaRecorder || mediaRecorder.state === "inactive") {
+    // Start recording
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+      await handleMicInput(audioBlob);
+    };
+    mediaRecorder.start();
+    micBtn.textContent = "⏹️"; // change icon to stop
+  } else {
+    // Stop recording
+    mediaRecorder.stop();
+    micBtn.textContent = "🎤";
+  }
+};
+
 })();

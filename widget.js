@@ -257,31 +257,49 @@ document.body.appendChild(langBubble);
   }
 
   async function sendToBot(message) {
-    addMsg(message, "user");
-    input.value = "";
-    showTyping();
+  addMsg(message, "user");
+  input.value = "";
+  showTyping();
+  try {
+    const res = await fetch(`${apiBase}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId, message })
+    });
+    hideTyping();
+    if (!res.ok) {
+      addMsg(`I had trouble replying just now (status ${res.status}).`);
+      return;
+    }
+    const data = await res.json();
+    let botReply = data.reply || data.answer || data.message || "I had trouble replying just now.";
+    if (botReply.trim().toLowerCase() === "i don't know") {
+      botReply = "I’m sorry, I don’t have that information right now. Could you try rephrasing your question?";
+    }
+    addMsg(botReply);
+
+    // 🔊 NEW: Call /voice to get Alloy audio
     try {
-      const res = await fetch(`${apiBase}/chat`, {
+      const voiceResp = await fetch(`${apiBase}/voice`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, message })
+        body: JSON.stringify({ text: botReply, voice: "alloy" })
       });
-      hideTyping();
-      if (!res.ok) {
-        addMsg(`I had trouble replying just now (status ${res.status}).`);
-        return;
+      if (voiceResp.ok) {
+        const blob = await voiceResp.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.play();
       }
-      const data = await res.json();
-      let botReply = data.reply || data.answer || data.message || "I had trouble replying just now.";
-      if (botReply.trim().toLowerCase() === "i don't know") {
-        botReply = "I’m sorry, I don’t have that information right now. Could you try rephrasing your question?";
-      }
-      addMsg(botReply);
-    } catch {
-      hideTyping();
-      addMsg("I had trouble replying just now.");
+    } catch (err) {
+      console.error("Voice playback failed", err);
     }
+
+  } catch {
+    hideTyping();
+    addMsg("I had trouble replying just now.");
   }
+}
 
   function openChat() {
     chat.style.display = "flex";

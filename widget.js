@@ -30,8 +30,8 @@
   position: fixed;
   bottom: 20px;
   right: 20px;
-  width: 30px;
-  height: 30px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   background: url(${avatarUrl}) center/cover no-repeat;
   cursor: pointer;

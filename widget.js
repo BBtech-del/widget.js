@@ -43,13 +43,13 @@
                   0 0 18px rgba(255, 255, 255, 0.25);
       backdrop-filter: blur(4px);
     }
-    /* Mobile: smaller avatar */
+    /* Mobile: much smaller avatar */
     @media (max-width: 600px) {
       .bb-avatar {
-        width: 45px;
-        height: 45px;
-        bottom: 16px;
-        right: 16px;
+        width: 35px;
+        height: 35px;
+        bottom: 12px;
+        right: 12px;
       }
     }
     .bb-chat {
@@ -70,9 +70,9 @@
     }
     @media (max-width: 600px) {
       .bb-chat {
-        bottom: 95px;
-        right: 16px;
-        width: calc(100% - 32px);
+        bottom: 85px;
+        right: 12px;
+        width: calc(100% - 24px);
         max-width: 320px;
       }
     }
@@ -141,10 +141,10 @@
     }
     @media (max-width: 600px) {
       .bb-bubble {
-        bottom: 70px;
-        right: 16px;
-        font-size: 13px;
-        padding: 6px 10px;
+        bottom: 55px;
+        right: 12px;
+        font-size: 12px;
+        padding: 6px 8px;
       }
     }
     .bb-bubble button {

@@ -27,28 +27,34 @@
       100% { opacity: 0.2; }
     }
     .bb-avatar {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: url(${avatarUrl}) center/cover no-repeat;
-  cursor: pointer;
-  z-index: 9999;
-  animation: breathing 3s ease-in-out infinite;
-  * Bubble effect */
-  background-color: rgba(255, 255, 255, 0.12); /* subtle transparent fill */
-  box-shadow:
-    inset 0 0 8px rgba(255, 255, 255, 0.5), /* inner glow */
-    0 4px 12px rgba(0, 0, 0, 0.25),         /* drop shadow */
-    0 0 18px rgba(255, 255, 255, 0.25);     /* soft outer glow */
-  backdrop-filter: blur(4px);               /* glass effect */
-}
-
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: url(${avatarUrl}) center/cover no-repeat;
+      cursor: pointer;
+      z-index: 9999;
+      animation: breathing 3s ease-in-out infinite;
+      background-color: rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.5),
+                  0 4px 12px rgba(0, 0, 0, 0.25),
+                  0 0 18px rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(4px);
+    }
+    /* Mobile: smaller avatar */
+    @media (max-width: 600px) {
+      .bb-avatar {
+        width: 45px;
+        height: 45px;
+        bottom: 16px;
+        right: 16px;
+      }
+    }
     .bb-chat {
       position: fixed;
-      bottom: 130px;
+      bottom: 110px;
       right: 20px;
       width: 320px;
       height: 400px;
@@ -61,6 +67,14 @@
       z-index: 9999;
       overflow: hidden;
       font-family: sans-serif;
+    }
+    @media (max-width: 600px) {
+      .bb-chat {
+        bottom: 95px;
+        right: 16px;
+        width: calc(100% - 32px);
+        max-width: 320px;
+      }
     }
     .bb-chat-header {
       display: flex;
@@ -111,29 +125,28 @@
       cursor: pointer;
     }
     .bb-bubble {
-  position: fixed;
-  bottom: 90px; /* desktop/tablet default */
-  right: 20px;
-  background: ${primary};
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 16px;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  z-index: 9999;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
-
-/* Mobile adjustment */
-@media (max-width: 600px) {
-  .bb-bubble {
-    bottom: 85px; /* lower for mobile */
-  }
-}
-
-
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      background: ${primary};
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 16px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 9999;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    @media (max-width: 600px) {
+      .bb-bubble {
+        bottom: 70px;
+        right: 16px;
+        font-size: 13px;
+        padding: 6px 10px;
+      }
+    }
     .bb-bubble button {
       background: transparent;
       border: none;
@@ -169,14 +182,12 @@
   avatar.className = "bb-avatar";
   document.body.appendChild(avatar);
 
-  // --- start 100+ chat head ---
-const langBubble = document.createElement("div");
-langBubble.className = "bb-bubble";
-langBubble.innerHTML = `Hi 👋 I'm fluent in 100+ languages <button aria-label="Close">×</button>`;
-langBubble.querySelector("button").onclick = () => langBubble.remove();
-document.body.appendChild(langBubble);
-// --- end chat bubble 100+ language ---
-
+  // Language bubble
+  const langBubble = document.createElement("div");
+  langBubble.className = "bb-bubble";
+  langBubble.innerHTML = `Hi 👋 I'm fluent in 100+ languages <button>×</button>`;
+  langBubble.querySelector("button").onclick = () => langBubble.remove();
+  document.body.appendChild(langBubble);
 
   // Chat container
   const chat = document.createElement("div");
@@ -274,7 +285,7 @@ document.body.appendChild(langBubble);
       const data = await res.json();
       let botReply = data.reply || data.answer || data.message || "I had trouble replying just now.";
       if (botReply.trim().toLowerCase() === "i don't know") {
-        botReply = "I’m sorry, I don’t have that information right now. Could you try rephrasing your question?";
+        botReply = "I'm sorry, I don't have that information right now. Could you try rephrasing your question?";
       }
       addMsg(botReply);
     } catch {
@@ -290,13 +301,14 @@ document.body.appendChild(langBubble);
 
   avatar.onclick = () => {
     openChat();
-    bubble?.remove?.();
+    langBubble?.remove?.();
   };
 
   sendBtn.onclick = () => {
     const msg = input.value.trim();
     if (msg) sendToBot(msg);
   };
+
   input.addEventListener("keydown", e => {
     if (e.key === "Enter") sendBtn.click();
   });

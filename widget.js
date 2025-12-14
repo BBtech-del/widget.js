@@ -256,7 +256,7 @@
     hideTyping();
     typingEl = document.createElement("div");
     typingEl.className = "bb-typing";
-    typingEl.innerHTML = "<span>.</span><span>.</span><span>.</span>";
+    typingEl.innerHTML = "...";
     messages.appendChild(typingEl);
     messages.scrollTop = messages.scrollHeight;
   }
